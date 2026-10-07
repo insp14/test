@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <title>Базовый белый прямоугольник</title>
+  <title>Базовый белый прямоугольник + освещение</title>
   <style>
     body { margin: 0; overflow: hidden; background: #222; }
     canvas { display: block; }
@@ -20,9 +20,17 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // Белый приплюснутый прямоугольник (BoxGeometry: ширина, высота, глубина)
+    // Освещение
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(ambientLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+    dirLight.position.set(5, 10, 7);
+    scene.add(dirLight);
+
+    // Белый приплюснутый прямоугольник
     const geometry = new THREE.BoxGeometry(2, 0.5, 1);
-    const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const material = new THREE.MeshStandardMaterial({ color: 0xffffff });
     const box = new THREE.Mesh(geometry, material);
     box.position.set(0, 0, 0);
     scene.add(box);
