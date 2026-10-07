@@ -61,17 +61,19 @@
 
       // Стеклянный короб
       const boxSize = 1.8;
-      const glassMaterial = new THREE.MeshPhysicalMaterial({
-        transparent: true,
-        opacity: 0.92,
-        roughness: 0.05,
-        metalness: 0,
-        color: 0xffffff,
-        thickness: 0.08,
-        ior: 1.5,
-        clearcoat: 1,
-        clearcoatRoughness: 0
-      });
+     const glassMaterial = new THREE.MeshPhysicalMaterial({
+  transparent: true,
+  opacity: 0.92,
+  roughness: 0.05,
+  metalness: 0,
+  color: 0xffffff,
+  ior: 1.5,
+  clearcoat: 1,
+  clearcoatRoughness: 0,
+  transmission: 0.95,      // заменяет эффект толщины для прозрачности
+  transmissionRoughness: 0.1 // добавляет лёгкую матовость стеклу
+});
+
 
       const glassBox = new THREE.Mesh(
         new THREE.BoxGeometry(boxSize, boxSize, boxSize),
