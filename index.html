@@ -2,9 +2,9 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <title>Базовый белый прямоугольник + освещение</title>
+  <title>Стеклянный короб с металлической окантовкой</title>
   <style>
-    body { margin: 0; overflow: hidden; background: #222; }
+    body { margin: 0; overflow: hidden; background: #111; }
     canvas { display: block; }
   </style>
 </head>
@@ -12,8 +12,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
     const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x111111);
+
     const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 3, 5);
+    camera.position.set(3, 3, 5);
     camera.lookAt(0, 0, 0);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -21,23 +23,88 @@
     document.body.appendChild(renderer.domElement);
 
     // Освещение
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
     scene.add(ambientLight);
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
     dirLight.position.set(5, 10, 7);
     scene.add(dirLight);
 
-    // Белый приплюснутый прямоугольник
-    const geometry = new THREE.BoxGeometry(2, 0.5, 1);
-    const material = new THREE.MeshStandardMaterial({ color: 0xffffff });
-    const box = new THREE.Mesh(geometry, material);
-    box.position.set(0, 0, 0);
-    scene.add(box);
+    // Дополнительный свет для бликов на металле
+    const pointLight = new THREE.PointLight(0xffffff, 0.8, 50);
+    pointLight.position.set(-5, 5, 5);
+    scene.add(pointLight);
 
+    // === СТЕКЛЯННЫЕ ГРАНИ ===
+    const boxSize = 2;
+    const glassGeometry = new THREE.BoxGeometry(boxSize, boxSize, boxSize);
+    const glassMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.3,
+      roughness: 0.0,
+      metalness: 0.0,
+      ior: 1.5,
+      transmission: 0.9,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.0,
+      reflectivity: 0.5,
+      side: THREE.DoubleSide
+    });
+    const glassBox = new THREE.Mesh(glassGeometry, glassMaterial);
+    scene.add(glassBox);
+
+    // === МЕТАЛЛИЧЕСКАЯ ОКАНТОВКА ===
+    const frameThickness = 0.12;
+    const metalMaterial = new THREE.MeshStandardMaterial({
+      color: 0x888888,
+      roughness: 0.3,
+      metalness: 1.0
+    });
+
+    // h — половина размера короба
+    const h = boxSize / 2;
+
+    // Рёбра вдоль оси X (4 шт.)
+    const xEdgeGeo = new THREE.BoxGeometry(boxSize, frameThickness, frameThickness);
+    const xEdges = [
+      [ 0,  h,  h], [ 0,  h, -h],
+      [ 0, -h,  h], [ 0, -h, -h]
+    ];
+    xEdges.forEach(pos => {
+      const edge = new THREE.Mesh(xEdgeGeo, metalMaterial);
+      edge.position.set(...pos);
+      scene.add(edge);
+    });
+
+    // Рёбра вдоль оси Y (4 шт.)
+    const yEdgeGeo = new THREE.BoxGeometry(frameThickness, boxSize, frameThickness);
+    const yEdges = [
+      [ h,  0,  h], [ h,  0, -h],
+      [-h,  0,  h], [-h,  0, -h]
+    ];
+    yEdges.forEach(pos => {
+      const edge = new THREE.Mesh(yEdgeGeo, metalMaterial);
+      edge.position.set(...pos);
+      scene.add(edge);
+    });
+
+    // Рёбра вдоль оси Z (4 шт.)
+    const zEdgeGeo = new THREE.BoxGeometry(frameThickness, frameThickness, boxSize);
+    const zEdges = [
+      [ h,  h, 0], [ h, -h, 0],
+      [-h,  h, 0], [-h, -h, 0]
+    ];
+    zEdges.forEach(pos => {
+      const edge = new THREE.Mesh(zEdgeGeo, metalMaterial);
+      edge.position.set(...pos);
+      scene.add(edge);
+    });
+
+    // Анимация вращения всей сцены
     function animate() {
       requestAnimationFrame(animate);
-      box.rotation.y += 0.01;
+      scene.rotation.y += 0.008;
       renderer.render(scene, camera);
     }
     animate();
@@ -50,4 +117,5 @@
   </script>
 </body>
 </html>
+
 
