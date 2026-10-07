@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <title>Стеклянный короб с металлической окантовкой</title>
+  <title>Стеклянный короб с защёлкой и петлями</title>
   <style>
     body { margin: 0; overflow: hidden; background: #111; }
     canvas { display: block; }
@@ -15,7 +15,7 @@
     scene.background = new THREE.Color(0x111111);
 
     const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(3, 3, 5);
+    camera.position.set(2.5, 2, 4);
     camera.lookAt(0, 0, 0);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -30,14 +30,17 @@
     dirLight.position.set(5, 10, 7);
     scene.add(dirLight);
 
-    // Дополнительный свет для бликов на металле
     const pointLight = new THREE.PointLight(0xffffff, 0.8, 50);
     pointLight.position.set(-5, 5, 5);
     scene.add(pointLight);
 
+    // Размеры короба (как у изначального прямоугольника)
+    const W = 2;   // ширина (X)
+    const H = 0.5;  // высота (Y)
+    const D = 1;    // глубина (Z)
+
     // === СТЕКЛЯННЫЕ ГРАНИ ===
-    const boxSize = 2;
-    const glassGeometry = new THREE.BoxGeometry(boxSize, boxSize, boxSize);
+    const glassGeometry = new THREE.BoxGeometry(W, H, D);
     const glassMaterial = new THREE.MeshPhysicalMaterial({
       color: 0xffffff,
       transparent: true,
@@ -54,54 +57,75 @@
     const glassBox = new THREE.Mesh(glassGeometry, glassMaterial);
     scene.add(glassBox);
 
-    // === МЕТАЛЛИЧЕСКАЯ ОКАНТОВКА ===
-    const frameThickness = 0.12;
+    // === МЕТАЛЛИЧЕСКАЯ ОКАНТОВКА (тонкая) ===
+    const ft = 0.03; // толщина окантовки — еле видна
     const metalMaterial = new THREE.MeshStandardMaterial({
       color: 0x888888,
-      roughness: 0.3,
+      roughness: 0.25,
       metalness: 1.0
     });
 
-    // h — половина размера короба
-    const h = boxSize / 2;
+    const hw = W / 2;
+    const hh = H / 2;
+    const hd = D / 2;
 
-    // Рёбра вдоль оси X (4 шт.)
-    const xEdgeGeo = new THREE.BoxGeometry(boxSize, frameThickness, frameThickness);
-    const xEdges = [
-      [ 0,  h,  h], [ 0,  h, -h],
-      [ 0, -h,  h], [ 0, -h, -h]
-    ];
-    xEdges.forEach(pos => {
-      const edge = new THREE.Mesh(xEdgeGeo, metalMaterial);
-      edge.position.set(...pos);
-      scene.add(edge);
+    // Рёбра вдоль X (4 шт.)
+    const xEdgeGeo = new THREE.BoxGeometry(W, ft, ft);
+    [[0, hh, hd], [0, hh, -hd], [0, -hh, hd], [0, -hh, -hd]].forEach(p => {
+      const e = new THREE.Mesh(xEdgeGeo, metalMaterial);
+      e.position.set(...p);
+      scene.add(e);
     });
 
-    // Рёбра вдоль оси Y (4 шт.)
-    const yEdgeGeo = new THREE.BoxGeometry(frameThickness, boxSize, frameThickness);
-    const yEdges = [
-      [ h,  0,  h], [ h,  0, -h],
-      [-h,  0,  h], [-h,  0, -h]
-    ];
-    yEdges.forEach(pos => {
-      const edge = new THREE.Mesh(yEdgeGeo, metalMaterial);
-      edge.position.set(...pos);
-      scene.add(edge);
+    // Рёбра вдоль Y (4 шт.)
+    const yEdgeGeo = new THREE.BoxGeometry(ft, H, ft);
+    [[hw, 0, hd], [hw, 0, -hd], [-hw, 0, hd], [-hw, 0, -hd]].forEach(p => {
+      const e = new THREE.Mesh(yEdgeGeo, metalMaterial);
+      e.position.set(...p);
+      scene.add(e);
     });
 
-    // Рёбра вдоль оси Z (4 шт.)
-    const zEdgeGeo = new THREE.BoxGeometry(frameThickness, frameThickness, boxSize);
-    const zEdges = [
-      [ h,  h, 0], [ h, -h, 0],
-      [-h,  h, 0], [-h, -h, 0]
-    ];
-    zEdges.forEach(pos => {
-      const edge = new THREE.Mesh(zEdgeGeo, metalMaterial);
-      edge.position.set(...pos);
-      scene.add(edge);
+    // Рёбра вдоль Z (4 шт.)
+    const zEdgeGeo = new THREE.BoxGeometry(ft, ft, D);
+    [[hw, hh, 0], [hw, -hh, 0], [-hw, hh, 0], [-hw, -hh, 0]].forEach(p => {
+      const e = new THREE.Mesh(zEdgeGeo, metalMaterial);
+      scene.add(e);
     });
 
-    // Анимация вращения всей сцены
+    // === ЗАЩЁЛКА (спереди, +Z сторона) ===
+    // Кружок (диск) на передней грани
+    const latchDiskGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.03, 24);
+    const latchDisk = new THREE.Mesh(latchDiskGeo, metalMaterial);
+    latchDisk.rotation.x = Math.PI / 2; // поворачиваем, чтобы диск лежал на грани
+    latchDisk.position.set(0, 0, hd + 0.02);
+    scene.add(latchDisk);
+
+    // Рычажок защёлки (маленький цилиндр)
+    const latchLeverGeo = new THREE.BoxGeometry(0.14, 0.03, 0.02);
+    const latchLever = new THREE.Mesh(latchLeverGeo, metalMaterial);
+    latchLever.position.set(0, 0, hd + 0.04);
+    scene.add(latchLever);
+
+    // === ПЕТЛИ (сзади, -Z сторона, две штуки) ===
+    const hingeRadius = 0.05;
+    const hingeLength = 0.08;
+    const hingeGeo = new THREE.CylinderGeometry(hingeRadius, hingeRadius, hingeLength, 16);
+    const hingeOffsetX = 0.6; // расстояние от центра до каждой петли
+
+    [-hingeOffsetX, hingeOffsetX].forEach(x => {
+      const hinge = new THREE.Mesh(hingeGeo, metalMaterial);
+      hinge.rotation.x = Math.PI / 2; // цилиндр вдоль оси Z
+      hinge.position.set(x, 0, -hd - 0.02);
+      scene.add(hinge);
+
+      // Крепёжная пластина петли (маленький прямоугольник на грани)
+      const plateGeo = new THREE.BoxGeometry(0.12, 0.15, 0.01);
+      const plate = new THREE.Mesh(plateGeo, metalMaterial);
+      plate.position.set(x, 0, -hd - 0.01);
+      scene.add(plate);
+    });
+
+    // Анимация вращения
     function animate() {
       requestAnimationFrame(animate);
       scene.rotation.y += 0.008;
@@ -117,5 +141,4 @@
   </script>
 </body>
 </html>
-
 
