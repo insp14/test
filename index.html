@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <title>Короб: крышка и основа с металлической обводкой</title>
+  <title>Короб: горизонтальные разделительные линии на боковых гранях</title>
   <style>
     body { margin: 0; overflow: hidden; background: #111; }
     canvas { display: block; }
@@ -40,9 +40,8 @@
     pointLight.position.set(-5, 5, 5);
     scene.add(pointLight);
 
+    // Размеры короба (как в предыдущей версии без разделения на крышку/основание)
     const W = 1.6, H = 0.5, D = 1;
-    const gap = 0.005; // небольшой зазор между крышкой и основой
-    const midH = H / 2;
 
     function createTexture(width, height, drawFn) {
       const canvas = document.createElement('canvas');
@@ -56,22 +55,32 @@
       return tex;
     }
 
+    // Текстура стекла: глянец + трещины + сколы
     const glassTex = createTexture(512, 512, (ctx, w, h) => {
       ctx.fillStyle = '#f5faff';
       ctx.fillRect(0, 0, w, h);
-      ctx.strokeStyle = '#cce0ff'; ctx.lineWidth = 1;
+
+      // Тонкие царапины
+      ctx.strokeStyle = '#cce0ff';
+      ctx.lineWidth = 1;
       for (let i = 0; i < 30; i++) {
         const x1 = Math.random() * w, y1 = Math.random() * h;
         const x2 = x1 + (Math.random() - 0.5) * w, y2 = y1 + (Math.random() - 0.5) * h;
         ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
       }
-      ctx.strokeStyle = '#446699'; ctx.lineWidth = 3;
+
+      // Толстые трещины
+      ctx.strokeStyle = '#446699';
+      ctx.lineWidth = 3;
       for (let i = 0; i < 40; i++) {
         const x1 = Math.random() * w, y1 = Math.random() * h;
         const x2 = x1 + (Math.random() - 0.5) * w, y2 = y1 + (Math.random() - 0.5) * h;
         ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
       }
-      ctx.fillStyle = '#223355'; ctx.globalAlpha = 0.6;
+
+      // Сколы по краям
+      ctx.fillStyle = '#223355';
+      ctx.globalAlpha = 0.6;
       for (let i = 0; i < 12; i++) {
         const r = Math.random() * 20 + 10;
         let x = Math.random() * w, y = Math.random() * h;
@@ -81,20 +90,35 @@
       }
     });
 
+    // Текстура металла: бело‑голубой + ржавчина
     const metalTex = createTexture(512, 512, (ctx, w, h) => {
-      ctx.fillStyle = '#dcf0ff'; ctx.fillRect(0, 0, w, h);
-      ctx.fillStyle = '#eaf6ff'; ctx.globalAlpha = 0.2;
-      for (let i = 0; i < 2500; i++) ctx.fillRect(Math.random() * w, Math.random() * h, 1, 1);
-      ctx.globalAlpha = 0.35; ctx.fillStyle = '#557799';
+      ctx.fillStyle = '#dcf0ff';
+      ctx.fillRect(0, 0, w, h);
+
+      // Зернистость
+      ctx.fillStyle = '#eaf6ff';
+      ctx.globalAlpha = 0.2;
+      for (let i = 0; i < 2500; i++) {
+        ctx.fillRect(Math.random() * w, Math.random() * h, 1, 1);
+      }
+
+      // Потертости
+      ctx.globalAlpha = 0.35;
+      ctx.fillStyle = '#557799';
       for (let i = 0; i < 10; i++) {
         ctx.beginPath();
         ctx.arc(Math.random() * w, Math.random() * h, Math.random() * 60 + 20, 0, Math.PI * 2);
         ctx.fill();
       }
-      ctx.globalAlpha = 0.7; ctx.fillStyle = '#b85a2a'; 
+
+      // Ржавчина
+      ctx.globalAlpha = 0.7;
+      ctx.fillStyle = '#b85a2a'; 
       for (let i = 0; i < 8; i++) {
         const r = Math.random() * 50 + 15;
-        ctx.beginPath(); ctx.arc(Math.random() * w, Math.random() * h, r, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath();
+        ctx.arc(Math.random() * w, Math.random() * h, r, 0, Math.PI * 2);
+        ctx.fill();
       }
     });
 
@@ -118,28 +142,15 @@
       metalness: 0.8
     });
 
-    const ft = 0.02;
+    const ft = 0.02; // толщина металлической окантовки
     const hw = W / 2, hh = H / 2, hd = D / 2, offset = 0.01;
 
-    // Верхняя часть (крышка)
-    const topGlassGeo = new THREE.BoxGeometry(W, midH - gap / 2, D);
-    const topGlass = new THREE.Mesh(topGlassGeo, glassMaterial);
-    topGlass.position.y = midH - (midH - gap / 2) / 2;
-    scene.add(topGlass);
+    // Основной стеклянный короб (цельный, как раньше)
+    const glassGeometry = new THREE.BoxGeometry(W, H, D);
+    const glassBox = new THREE.Mesh(glassGeometry, glassMaterial);
+    scene.add(glassBox);
 
-    // Нижняя часть (основа)
-    const botGlassGeo = new THREE.BoxGeometry(W, midH - gap / 2, D);
-    const botGlass = new THREE.Mesh(botGlassGeo, glassMaterial);
-    botGlass.position.y = -midH + (midH - gap / 2) / 2;
-    scene.add(botGlass);
-
-    // Металлическая обводка по линии раздела (горизонтальное кольцо)
-    const ringGeo = new THREE.BoxGeometry(W - offset, ft, D - offset);
-    const ring = new THREE.Mesh(ringGeo, metalMaterial);
-    ring.position.y = 0;
-    scene.add(ring);
-
-    // Каркас ребер (обновлен с учетом разделения)
+    // Каркас ребер (окантовка по периметру)
     const xEdgeGeo = new THREE.BoxGeometry(W - offset, ft, ft);
     [[0, hh + offset/2, hd], [0, hh + offset/2, -hd], [0, -hh - offset/2, hd], [0, -hh - offset/2, -hd]].forEach(p => {
       const e = new THREE.Mesh(xEdgeGeo, metalMaterial);
@@ -147,16 +158,9 @@
       scene.add(e);
     });
 
-    const yEdgeGeoTop = new THREE.BoxGeometry(ft, (midH - gap/2) - offset, ft);
-    [[hw, midH - (midH - gap/2)/2, hd], [hw, midH - (midH - gap/2)/2, -hd], [-hw, midH - (midH - gap/2)/2, hd], [-hw, midH - (midH - gap/2)/2, -hd]].forEach(p => {
-      const e = new THREE.Mesh(yEdgeGeoTop, metalMaterial);
-      e.position.set(...p);
-      scene.add(e);
-    });
-
-    const yEdgeGeoBot = new THREE.BoxGeometry(ft, (midH - gap/2) - offset, ft);
-    [[hw, -midH + (midH - gap/2)/2, hd], [hw, -midH + (midH - gap/2)/2, -hd], [-hw, -midH + (midH - gap/2)/2, hd], [-hw, -midH + (midH - gap/2)/2, -hd]].forEach(p => {
-      const e = new THREE.Mesh(yEdgeGeoBot, metalMaterial);
+    const yEdgeGeo = new THREE.BoxGeometry(ft, H - offset, ft);
+    [[hw, 0, hd], [hw, 0, -hd], [-hw, 0, hd], [-hw, 0, -hd]].forEach(p => {
+      const e = new THREE.Mesh(yEdgeGeo, metalMaterial);
       e.position.set(...p);
       scene.add(e);
     });
@@ -166,6 +170,26 @@
       const e = new THREE.Mesh(zEdgeGeo, metalMaterial);
       e.position.set(...p);
       scene.add(e);
+    });
+
+    // Горизонтальные разделительные линии на боковых плоскостях (кроме верхней и нижней)
+    // Высота линии — посередине высоты короба
+    const midY = 0; 
+
+    // Линия на передней и задней плоскости (вдоль оси X)
+    const horizLineGeoXZ = new THREE.BoxGeometry(W - offset, ft, ft);
+    [hd, -hd].forEach(zPos => {
+      const line = new THREE.Mesh(horizLineGeoXZ, metalMaterial);
+      line.position.set(0, midY, zPos);
+      scene.add(line);
+    });
+
+    // Линия на левой и правой плоскости (вдоль оси Z)
+    const horizLineGeoZX = new THREE.BoxGeometry(ft, ft, D - offset);
+    [hw, -hw].forEach(xPos => {
+      const line = new THREE.Mesh(horizLineGeoZX, metalMaterial);
+      line.position.set(xPos, midY, 0);
+      scene.add(line);
     });
 
     function animate() {
