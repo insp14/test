@@ -1,0 +1,1043 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>JUST REMEMBER</title>
+    <style>
+        @font-face {
+            font-family: 'DOSFont';
+            src: url('DOSFont.ttf') format('truetype');
+        }
+
+        :root {
+            --bg-color: #fff;
+            --text-color: #000;
+            --border-color: #000;
+            --topbar-bg: rgba(255, 255, 255, 0.8);
+            --topbar-border: rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'DOSFont', monospace;
+            font-size: 20px;
+            line-height: 1.4;
+            cursor: pointer;
+            min-height: 100vh;
+            padding: 60px 40px;
+            padding-top: 140px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        #topbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: var(--topbar-bg);
+            border-bottom: 1px solid var(--topbar-border);
+            padding: 12px 24px;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            z-index: 200;
+            backdrop-filter: blur(4px);
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        #menu-btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 6px 18px;
+            font-family: 'DOSFont', monospace;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        #menu-btn:hover {
+            background: var(--text-color);
+            color: var(--bg-color);
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 300;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        .modal h2 {
+            font-size: 24px;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            color: var(--text-color);
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .btn-control {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 8px 16px;
+            font-family: 'DOSFont', monospace;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .btn-control:hover {
+            background: var(--text-color);
+            color: var(--bg-color);
+        }
+
+        .btn-control:disabled {
+            opacity: 0.4;
+            cursor: default;
+        }
+
+        .btn-control:disabled:hover {
+            background: transparent;
+            color: var(--text-color);
+        }
+
+        #close-menu {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 20px;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .music-control {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .music-control label {
+            font-family: 'DOSFont', monospace;
+            font-size: 14px;
+            color: var(--text-color);
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 4px;
+            background: var(--border-color);
+            outline: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            background: var(--text-color);
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            background: var(--text-color);
+            border: none;
+            cursor: pointer;
+        }
+
+        #title-block {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .title-line {
+            border: none;
+            border-top: 2px solid var(--border-color);
+            margin: 20px auto;
+            width: 80%;
+        }
+
+        #title {
+            font-size: 36px;
+            font-weight: bold;
+            letter-spacing: 4px;
+            color: var(--text-color);
+        }
+
+        #game-container {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .paragraph {
+            text-align: justify;
+            margin-bottom: 12px;
+            white-space: pre-wrap;
+            min-height: 1.6em;
+        }
+
+        .cursor {
+            display: inline-block;
+            animation: blink 0.8s step-end infinite;
+        }
+
+        .choice-block {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 24px;
+            opacity: 0;
+            animation: fadeIn 0.5s forwards;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        .choice-btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 10px 24px;
+            font-family: 'DOSFont', monospace;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .choice-btn:hover {
+            background: var(--text-color);
+            color: var(--bg-color);
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        /* === 3D-сцена лифта === */
+        #elevator-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 400;
+            background: #000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 1.5s, visibility 1.5s;
+        }
+
+        #elevator-container.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        #elevator-container canvas {
+            display: block;
+        }
+
+        #elevator-hint {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #333;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+            pointer-events: none;
+            user-select: none;
+            opacity: 0.5;
+            z-index: 410;
+        }
+
+        /* Плавное скрытие игрового интерфейса */
+        #game-wrapper {
+            transition: opacity 1.5s;
+        }
+
+        #game-wrapper.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Обёртка для плавного скрытия игры -->
+    <div id="game-wrapper">
+        <div id="topbar">
+            <button id="menu-btn">Меню</button>
+        </div>
+
+        <div class="overlay" id="overlay">
+            <div class="modal">
+                <button id="close-menu">&times;</button>
+                <h2>Меню</h2>
+                <div class="controls">
+                    <button class="btn-control" id="theme-toggle">Сменить тему</button>
+                    <button class="btn-control" id="rollback-btn" disabled>Откатиться к выбору</button>
+                    <button class="btn-control" id="music-toggle">Музыка: вкл</button>
+                    <div class="music-control">
+                        <label for="volume-slider">Громкость</label>
+                        <input type="range" id="volume-slider" min="0" max="100" value="50">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="overlay" id="intro-overlay">
+            <div class="modal">
+                <h2>Об игре</h2>
+                <p style="margin-bottom: 24px; font-size: 16px; text-align: justify;">
+                    Данная текстовая игра имеет направление на сюжетную составляющую с возможностью выбора варианта развития событий, влияющих на конечный результат. Проникнитесь таинственной историей, которую прожил главный герой и получите те же эмоции, что и он. Удачи!
+                </p>
+                <button class="btn-control" id="intro-close">Понятно</button>
+            </div>
+        </div>
+
+        <div id="title-block">
+            <hr class="title-line">
+            <div id="title">JUST REMEMBER</div>
+            <hr class="title-line">
+        </div>
+        <div id="game-container"></div>
+
+        <audio id="bg-music" loop preload="auto">
+            <source src="ambient.mp3" type="audio/mpeg">
+        </audio>
+
+        <audio id="click-sound" preload="auto">
+            <source src="click.mp3" type="audio/mpeg">
+        </audio>
+    </div>
+
+    <!-- 3D-сцена лифта (скрыта до момента вызова) -->
+    <div id="elevator-container"></div>
+    <div id="elevator-hint" style="display:none;">Нажмите на двери, чтобы открыть лифт</div>
+
+    <!-- Importmap для Three.js -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <!-- Игровой скрипт -->
+    <script>
+        // --- Общий текст для обеих веток первого выбора ---
+        const commonText = [
+            "Совершенно новое пространство. Далеко не такое пустое как предыдущее. Неизменно одно – в руках стеклянный маленький короб с таинственным куском бумаги.",
+            "Вы быстро оглядываетесь по сторонам, словно чувства начинают к Вам возвращаться, и эти чувства – это страх, растерянность, непонимание. Вы боитесь – но это уже хоть что-то, что-то такое, что Вы так давно потеряли – эмоции.",
+            "Неоднократно оглянувшись, вы замечаете вокруг толпу людей, давненько Вы их не видели. Кто-то бежит от бытовой рутины, кто-то в страхе идет подозрительно оглядываясь, кто-то смеется и плачет.",
+            "Но одно странно – Вас словно не существует, Вы ощущаете как эти люди проходят Вас насквозь, словно они призраки, или все же это Вы?",
+            "Через мгновение Вы ощущаете толчок позади себя, словно Вас кто-то задел. Обернувшись, Вы видите старика, низкорослого старика с тростью и шляпой на вид из 60-ых годов.",
+            "Испытывая чувства недоумения и растерянности, Вы хотите взглянуть на то, что осталось у Вас неизменным – короб, который находился у Вас в руках. Опускаете глаза, но его у Вас нет. Кто-то украл? Но кому он нужен?",
+            "Подняв глаза, вы понимаете, что в том месте, где Вы находитесь больше нет ни одного человека, а пространство относительно меньше предыдущего.",
+            "Вам было тяжело понять что-либо, ведь буквально над Вами на расстоянии вытянутой руки в лицо светила лампа, ослепляя Вас так сильно, что попытка оглянуться и понять, где Вы находитесь увенчалась провалом.",
+            "Было ясно одно – Вы лежите. Возник лишь один вопрос: «Что тут происходит?». Всего лишь несколько секунд назад Вы стояли по середине бескрайнего пространства наполненного людьми с переменными чувствами страха и растерянности, и тут Вы резко оказываетесь в положении лежа перед напрочь ослепляющей глаза лампой.",
+            "Находясь в раздумьях о происходящем, Вы слышите громкий хлопок, по звуку схожий со звуком закрывающейся двери, после которого отодвигается лампа и перед Вами появляется человеческий силуэт.",
+            "Насмотревшись в течение продолжительного времени на теплый свет от лампы в глазах у Вас, бегали зайчики из-за чего распознать лицо незнакомца было практически невозможно.",
+            "«Добрый день, как Вы себя чувствуете?» - сказал он. Голос мужской, и по интонации показался достаточно располагающим на дальнейшее общение и продолжение диалога.",
+            "Незнакомец представился вашим лечащим врачом, у которого Вы находились под наблюдением. «После того как бригада скорой помощи прибыла на место, Вы лежали и дергались в конвульсиях прямо на проезжей части.» - пояснил он.",
+            "Однако, эти слова были для Вас пустотой, ведь ничего подобного Вы и не помнили. Пока он задавал дополнительные вопросы о том, что же с Вами все-таки произошло, эффект от лампы начал понемногу спадать и лицо врача стало проявляться.",
+            "То, что он говорил Вам было не так важно. Вы смогли разглядеть его лицо. Перед Вами был мужчина: щетина на подбородке, коротко стриженная голова, ни единого шрама, а в правом ухе была маленькая сережка.",
+            "Рот маленький, нос вытянутый с горбинкой, глаза различить было тяжело, так как зрение полностью еще к Вам не вернулось.",
+            "«Прошу прощения, Вы меня слушаете? Вы выглядите не собранным, когда я спрашиваю, пожалуйсто, отвечайте на мои вопросы.» - нервно сказал врач.",
+            "После длительного расспроса врача Вас о том, помните ли Вы кто Вы такой и как оказались на том месте – он не получил никакого ответа от Вас.",
+            "Тяжело вздохнув и на несколько секунд опустив глаза в пол, а затем переведя взгляд на Вас, он тяжело проговорил: «Раз Вы ничего не можете мне сказать, тогда скажу Вам я – уже битый час в коридоре для гостей Вас ожидает пожилой мужчина, он сказал, что пришел к Вам.",
+            "Как будете готовы, нажмите на красную кнопку на стене, она просигнализирует и оповестит его о том, что Вы готовы к приему». Заметив Вашу оторопелость от данной новости, врач странно улыбнулся и немедленно покинул палату.",
+            "Все еще пребывая в состоянии легкой контузии, Вы лежите некоторое время на больничной койке. В голове у Вас сплошное отрицание происходящего. Вы не понимаете как и откуда попали сюда, а главное, кто может ожидать Вас в этом месте?",
+            "Запомнив слова врача, которыми он описал Вашего гостя, в голову приходит лишь одна мысль о том, кто может Вас ожидать. «Пожилой мужчина с трость» - именно так выразился врач (или вы так запомнили?).",
+            "Провалы в памяти сказываются на Вас все чаще и чаще. Но пытаясь вспомнить или понять, кто же находится по ту сторону двери, вы вспоминаете, как попали сюда, а вернее, что видели последним.",
+            "Наверняка догадываясь о личности Вашего гостя, Вы проводите в раздумьях еще несколько секунд прежде, чем решительно нажмете на кнопку.",
+        ];
+
+        // --- Структура сюжета ---
+        const paragraphs = [
+            "Просто представьте: вы скитаетесь по пустому бесконечному пространству с какой-то целью, но вы идете так долго, что забыли – для чего это делаете или вернее почему?",
+            "В руках у Вас странный предмет, напоминающий стеклянный короб, в котором находится непонятный кусок бумаги, на котором что-то написано, но разобрать что именно – невозможно.",
+            "Открыть его является непосильной задачей. Разбить – вокруг пустота и ничего более, нет ни чего-то острого, ни чего-то твердого. Все мягкое и спокойное.",
+            "Кажется, то, что находится внутри – это и есть ключ к пониманию того, что тут случилось, ключ к объяснению всего происходящего. Надежда угасла уже давно.",
+            "Все дальнейшие похождения – просто привычка. Любые чувства, эмоции притупились максимально. Ни страха, ни сожаления, ни радости, ни удовлетворения. Это испытание, которое уже, казалось, было провалено.",
+            "После пройденных миллионов километров по пустоте, Вы обнаруживаете выделяющееся, непохожее ни на что… (???). Вы когда-нибудь видели это?",
+            "Прошло столько времени, пропало какое-либо понимание происходящего, возникает лишь два вопроса: прикоснуться или отвергнуть? Погубит или поможет? Спасет или потревожит?",
+            "Появляется выбор, которого не было тогда, когда он был так важен. Прикосновение в ситуации с затупленными чувствами тактильности не вызывает ни капли сомнения, страха, вообще ничего.",
+            {
+                type: "choice",
+                options: [
+                    {
+                        label: "Прикоснуться",
+                        result: [...commonText]
+                    },
+                    {
+                        label: "Отвергнуть",
+                        result: [
+                            "Нет. Вы больше не верите. Все угасло уже очень давно. Вы не хотите возвращаться к этому. Но что-то или кто-то с Вами не согласен и Вы чувствуете резкий толчок позади себя...",
+                            ...commonText
+                        ]
+                    }
+                ]
+            },
+            {
+                type: "choice",
+                options: [
+                    {
+                        label: "Нажать",
+                        result: [
+                            "Спустя некоторое время раздается уже знакомый Вам звук открывающейся двери, точь-в-точь как тогда, когда к Вам в палату зашел врач. В предвкушении о встрече лицом к лицу с Вашим таинственным гостем, Вы изучаете приближающийся к Вам силуэт.",
+                            "В руках у него не было трости, да и шляпы на голове также не было. Когда пожилой мужчина подошел практически вплотную к койке, на которой Вы лежите, Вам удается рассмотреть черты его лица, которые не выделялись особенностями и были абсолютно обычными для старика. Однако, с его лица читались эмоции негодования и удивления.",
+                            "- Добрый день, уважаемый мистер… (???), я владелец данной частной больницы. Очень редки случаи, когда я самолично прихожу проведать своих пациентов, но то, что произошло с Вами действительно требует моего посещения, да и признаться честно с таким случаем, как Ваш, я сталкиваюсь впервые.",
+                            "Я уже осведомлен о том, что Вы ничего не помните, а если и помните, то не хотите об этом говорить, как мне сказал Ваш врач.",
+                            "Действительно, во время допроса о том, что с Вами произошло Вы так ничего и не сказали, однако некоторые детали Вы прекрасно помнили. И соответственно прекрасно помнили того пожилого мужчину, который толкнул Вас, в момент, когда Вы стояли на проезжей части.",
+                            "И в данный момент, когда Вы узнали лицо гостя стало определенно ясно – это два разных человека.",
+                            "__ELEVATOR_SCENE__"
+                        ]
+                    },
+                    {
+                        label: "Не нажимать",
+                        result: [
+                            // Сюжетный текст будет добавлен позже
+                        ]
+                    }
+                ]
+            }
+        ];
+
+        let currentIndex = 0;
+        let isTyping = false;
+        let typingInterval = null;
+        let choiceMade = false;
+        let pendingResult = null;
+        let currentTypingText = '';
+        let isChoiceVisible = false;
+        const container = document.getElementById('game-container');
+
+        let rollbackCheckpoint = null;
+        const rollbackBtn = document.getElementById('rollback-btn');
+
+        const bgMusic = document.getElementById('bg-music');
+        const clickSound = document.getElementById('click-sound');
+        const musicToggle = document.getElementById('music-toggle');
+        const volumeSlider = document.getElementById('volume-slider');
+        let musicPlaying = true;
+
+        bgMusic.volume = 0.5;
+        clickSound.volume = 0.5;
+
+        bgMusic.play().catch(() => {
+            const startMusicOnce = () => {
+                if (musicPlaying) {
+                    bgMusic.play().catch(() => {});
+                }
+                document.body.removeEventListener('click', startMusicOnce);
+            };
+            document.body.addEventListener('click', startMusicOnce);
+        });
+
+        function playClick() {
+            if (!musicPlaying) return;
+            clickSound.currentTime = 0;
+            clickSound.play().catch(() => {});
+        }
+
+        const overlay = document.getElementById('overlay');
+        const menuBtn = document.getElementById('menu-btn');
+        const closeMenuBtn = document.getElementById('close-menu');
+
+        menuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            playClick();
+            overlay.classList.add('active');
+        });
+
+        closeMenuBtn.addEventListener('click', () => {
+            playClick();
+            overlay.classList.remove('active');
+        });
+
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                overlay.classList.remove('active');
+            }
+        });
+
+        const introOverlay = document.getElementById('intro-overlay');
+        const introCloseBtn = document.getElementById('intro-close');
+
+        setTimeout(() => {
+            introOverlay.classList.add('active');
+        }, 500);
+
+        introCloseBtn.addEventListener('click', () => {
+            playClick();
+            introOverlay.classList.remove('active');
+        });
+
+        introOverlay.addEventListener('click', (e) => {
+            if (e.target === introOverlay) {
+                playClick();
+                introOverlay.classList.remove('active');
+            }
+        });
+
+        document.querySelector('.modal').addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
+        const themeToggle = document.getElementById('theme-toggle');
+        let isDark = false;
+
+        themeToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            playClick();
+            isDark = !isDark;
+            const root = document.documentElement;
+            if (isDark) {
+                root.style.setProperty('--bg-color', '#000');
+                root.style.setProperty('--text-color', '#fff');
+                root.style.setProperty('--border-color', '#fff');
+                root.style.setProperty('--topbar-bg', 'rgba(0, 0, 0, 0.7)');
+                root.style.setProperty('--topbar-border', 'rgba(255, 255, 255, 0.3)');
+            } else {
+                root.style.setProperty('--bg-color', '#fff');
+                root.style.setProperty('--text-color', '#000');
+                root.style.setProperty('--border-color', '#000');
+                root.style.setProperty('--topbar-bg', 'rgba(255, 255, 255, 0.8)');
+                root.style.setProperty('--topbar-border', 'rgba(0, 0, 0, 0.3)');
+            }
+        });
+
+        rollbackBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!rollbackCheckpoint) return;
+
+            playClick();
+            rollbackBtn.disabled = true;
+
+            if (isTyping) {
+                clearInterval(typingInterval);
+                isTyping = false;
+            }
+
+            pendingResult = null;
+            choiceMade = false;
+
+            const keepCount = rollbackCheckpoint.containerChildCount;
+            while (container.children.length > keepCount) {
+                container.removeChild(container.lastChild);
+            }
+
+            currentIndex = rollbackCheckpoint.choiceIndex;
+
+            const choiceObj = paragraphs[currentIndex];
+            showChoice(choiceObj, false);
+
+            currentIndex++;
+
+            overlay.classList.remove('active');
+        });
+
+        musicToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            playClick();
+            if (musicPlaying) {
+                bgMusic.pause();
+                musicPlaying = false;
+                musicToggle.textContent = 'Музыка: выкл';
+            } else {
+                bgMusic.play().catch(err => console.log('Воспроизведение заблокировано браузером'));
+                musicPlaying = true;
+                musicToggle.textContent = 'Музыка: вкл';
+            }
+        });
+
+        volumeSlider.addEventListener('input', (e) => {
+            e.stopPropagation();
+            const vol = volumeSlider.value / 100;
+            bgMusic.volume = vol;
+            clickSound.volume = vol;
+        });
+
+        function typeParagraph(text) {
+            isTyping = true;
+            const p = document.createElement('div');
+            p.className = 'paragraph';
+            const cursor = document.createElement('span');
+            cursor.className = 'cursor';
+            cursor.textContent = '_';
+            p.appendChild(cursor);
+            container.appendChild(p);
+            let charIndex = 0;
+            const speed = 30;
+            typingInterval = setInterval(() => {
+                if (charIndex < text.length) {
+                    const char = document.createTextNode(text[charIndex]);
+                    p.insertBefore(char, cursor);
+                    charIndex++;
+                } else {
+                    clearInterval(typingInterval);
+                    cursor.remove();
+                    isTyping = false;
+                }
+            }, speed);
+        }
+
+        function skipTyping() {
+            clearInterval(typingInterval);
+            const lastP = container.lastElementChild;
+            if (lastP && lastP.classList.contains('paragraph')) {
+                lastP.textContent = currentTypingText;
+            }
+            isTyping = false;
+        }
+
+        function typeParagraphTracked(text) {
+            currentTypingText = text;
+            typeParagraph(text);
+        }
+
+        function showChoice(choiceObj, enableRollback) {
+            choiceMade = false;
+
+            rollbackCheckpoint = {
+                choiceIndex: currentIndex,
+                containerChildCount: container.children.length
+            };
+            if (enableRollback) {
+                rollbackBtn.disabled = false;
+            }
+            isChoiceVisible = true;
+            const choiceBlock = document.createElement('div');
+            choiceBlock.className = 'choice-block';
+            choiceObj.options.forEach((option) => {
+                const btn = document.createElement('button');
+                btn.className = 'choice-btn';
+                btn.textContent = option.label;
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (choiceMade) return;
+                    choiceMade = true;
+                    isChoiceVisible = false;
+                    playClick();
+                    choiceBlock.remove();
+                    pendingResult = option.result.slice();
+                    if (pendingResult.length > 0) {
+                        const firstText = pendingResult.shift();
+                        if (firstText === '__ELEVATOR_SCENE__') {
+                            triggerElevatorScene();
+                        } else {
+                            typeParagraphTracked(firstText);
+                        }
+                    }
+                });
+                choiceBlock.appendChild(btn);
+            });
+            container.appendChild(choiceBlock);
+        }
+
+        // --- Запуск 3D-сцены лифта ---
+        function triggerElevatorScene() {
+            // Плавно скрываем игровой интерфейс
+            const gameWrapper = document.getElementById('game-wrapper');
+            gameWrapper.classList.add('hidden');
+
+            // Через 1.5с (когда игра исчезнет) показываем лифт
+            setTimeout(() => {
+                const elevatorContainer = document.getElementById('elevator-container');
+                const elevatorHint = document.getElementById('elevator-hint');
+                elevatorContainer.classList.add('active');
+                elevatorHint.style.display = 'block';
+
+                // Вызываем функцию из модуля Three.js
+                if (window.showElevatorScene) {
+                    window.showElevatorScene();
+                }
+            }, 1500);
+        }
+
+        document.body.addEventListener('click', () => {
+            if (overlay.classList.contains('active')) return;
+            if (introOverlay.classList.contains('active')) return;
+            if (isChoiceVisible) return;
+            if (isTyping) {
+                skipTyping();
+                return;
+            }
+            if (pendingResult && pendingResult.length > 0) {
+                const nextText = pendingResult.shift();
+                if (nextText === '__ELEVATOR_SCENE__') {
+                    triggerElevatorScene();
+                } else {
+                    typeParagraphTracked(nextText);
+                }
+                return;
+            }
+            if (currentIndex < paragraphs.length) {
+                const item = paragraphs[currentIndex];
+                if (typeof item === 'string') {
+                    typeParagraphTracked(item);
+                    currentIndex++;
+                } else if (item.type === "choice") {
+                    showChoice(item, true);
+                    currentIndex++;
+                }
+            }
+        });
+    </script>
+
+    <!-- 3D-сцена лифта (Three.js) -->
+    <script type="module">
+        import * as THREE from 'three';
+
+        let elevatorScene = null;
+        let elevatorRenderer = null;
+        let elevatorCamera = null;
+        let leftDoor = null;
+        let rightDoor = null;
+        let indicator = null;
+        let indicatorLight = null;
+        let doorsOpen = false;
+        let doorAnimating = false;
+        let animationStart = 0;
+        const animationDuration = 1.5;
+        let initialized = false;
+
+        const doorWidth = 1.0;
+        const doorHeight = 2.6;
+        const doorThickness = 0.09;
+        const gap = 0.015;
+        const doorOpenOffset = doorWidth + gap;
+
+        function initElevator() {
+            if (initialized) return;
+            initialized = true;
+
+            const container = document.getElementById('elevator-container');
+
+            elevatorScene = new THREE.Scene();
+            elevatorScene.background = new THREE.Color(0x000000);
+            elevatorScene.fog = new THREE.FogExp2(0x000000, 0.22);
+
+            elevatorCamera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 0.1, 100);
+            elevatorCamera.position.set(0, 1.6, 4.8);
+            elevatorCamera.lookAt(0, 1.6, 0);
+
+            elevatorRenderer = new THREE.WebGLRenderer({ antialias: true });
+            elevatorRenderer.setSize(window.innerWidth, window.innerHeight);
+            elevatorRenderer.setPixelRatio(window.devicePixelRatio);
+            elevatorRenderer.shadowMap.enabled = true;
+            elevatorRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(elevatorRenderer.domElement);
+
+            // Освещение
+            indicatorLight = new THREE.PointLight(0xffffff, 2.8, 5.5);
+            indicatorLight.position.set(0, 2.95, 0.35);
+            indicatorLight.castShadow = true;
+            indicatorLight.shadow.mapSize.set(1024, 1024);
+            indicatorLight.shadow.camera.left = -3.5;
+            indicatorLight.shadow.camera.right = 3.5;
+            indicatorLight.shadow.camera.top = 4.5;
+            indicatorLight.shadow.camera.bottom = -1;
+            elevatorScene.add(indicatorLight);
+
+            const overheadLight = new THREE.PointLight(0x4466aa, 1.3, 6);
+            overheadLight.position.set(0, 3.8, 0);
+            elevatorScene.add(overheadLight);
+
+            // Текстуры
+            function createDoorTexture() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 256;
+                canvas.height = 512;
+                const ctx = canvas.getContext('2d');
+                const grad = ctx.createLinearGradient(0, 0, 256, 0);
+                grad.addColorStop(0, '#333338');
+                grad.addColorStop(0.5, '#4a4a52');
+                grad.addColorStop(1, '#333338');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, 256, 512);
+                for (let i = 0; i < 256; i += 32) {
+                    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+                    ctx.fillRect(i, 0, 2, 512);
+                    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+                    ctx.fillRect(i + 2, 0, 1, 512);
+                }
+                for (let i = 0; i < 800; i++) {
+                    const x = Math.random() * 256;
+                    const y = Math.random() * 512;
+                    ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.05})`;
+                    ctx.fillRect(x, y, 1, 1);
+                }
+                const texture = new THREE.CanvasTexture(canvas);
+                texture.wrapS = THREE.RepeatWrapping;
+                texture.wrapT = THREE.RepeatWrapping;
+                return texture;
+            }
+
+            function createInteriorTexture() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 256;
+                canvas.height = 512;
+                const ctx = canvas.getContext('2d');
+                const grad = ctx.createLinearGradient(0, 0, 0, 512);
+                grad.addColorStop(0, '#050507');
+                grad.addColorStop(0.4, '#000000');
+                grad.addColorStop(1, '#000000');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, 256, 512);
+                const texture = new THREE.CanvasTexture(canvas);
+                texture.wrapS = THREE.RepeatWrapping;
+                texture.wrapT = THREE.RepeatWrapping;
+                return texture;
+            }
+
+            const doorTexture = createDoorTexture();
+            const interiorTexture = createInteriorTexture();
+
+            // Материалы
+            const doorMaterial = new THREE.MeshStandardMaterial({
+                map: doorTexture,
+                roughness: 0.45,
+                metalness: 0.75,
+                side: THREE.DoubleSide
+            });
+            const frameMaterial = new THREE.MeshStandardMaterial({
+                color: 0x222226,
+                roughness: 0.3,
+                metalness: 0.8
+            });
+            const trimMaterial = new THREE.MeshStandardMaterial({
+                color: 0x151518,
+                roughness: 0.6,
+                metalness: 0.4
+            });
+            const interiorMaterial = new THREE.MeshStandardMaterial({
+                map: interiorTexture,
+                roughness: 0.9,
+                metalness: 0.0
+            });
+            const indicatorMaterial = new THREE.MeshStandardMaterial({
+                color: 0xff8800,
+                emissive: 0xff4400,
+                emissiveIntensity: 0.5,
+                roughness: 0.25
+            });
+
+            // Группа лифта
+            const elevatorGroup = new THREE.Group();
+            elevatorScene.add(elevatorGroup);
+
+            // Левая створка
+            const leftDoorGeo = new THREE.BoxGeometry(doorWidth, doorHeight, doorThickness);
+            leftDoor = new THREE.Mesh(leftDoorGeo, doorMaterial);
+            leftDoor.position.set(-(doorWidth / 2 + gap / 2), doorHeight / 2, 0);
+            leftDoor.castShadow = true;
+            leftDoor.receiveShadow = true;
+            elevatorGroup.add(leftDoor);
+
+            // Правая створка
+            const rightDoorGeo = new THREE.BoxGeometry(doorWidth, doorHeight, doorThickness);
+            rightDoor = new THREE.Mesh(rightDoorGeo, doorMaterial);
+            rightDoor.position.set(doorWidth / 2 + gap / 2, doorHeight / 2, 0);
+            rightDoor.castShadow = true;
+            rightDoor.receiveShadow = true;
+            elevatorGroup.add(rightDoor);
+
+            // Рама
+            const topFrameGeo = new THREE.BoxGeometry(doorWidth * 2 + 0.3, 0.25, 0.12);
+            const topFrame = new THREE.Mesh(topFrameGeo, frameMaterial);
+            topFrame.position.set(0, doorHeight + 0.125, 0);
+            topFrame.castShadow = true;
+            elevatorGroup.add(topFrame);
+
+            const leftFrameGeo = new THREE.BoxGeometry(0.15, doorHeight + 0.25, 0.12);
+            const leftFrame = new THREE.Mesh(leftFrameGeo, frameMaterial);
+            leftFrame.position.set(-(doorWidth + 0.075 + gap / 2), doorHeight / 2, 0);
+            leftFrame.castShadow = true;
+            elevatorGroup.add(leftFrame);
+
+            const rightFrameGeo = new THREE.BoxGeometry(0.15, doorHeight + 0.25, 0.12);
+            const rightFrame = new THREE.Mesh(rightFrameGeo, frameMaterial);
+            rightFrame.position.set(doorWidth + 0.075 + gap / 2, doorHeight / 2, 0);
+            rightFrame.castShadow = true;
+            elevatorGroup.add(rightFrame);
+
+            const sillGeo = new THREE.BoxGeometry(doorWidth * 2 + 0.3, 0.05, 0.14);
+            const sill = new THREE.Mesh(sillGeo, trimMaterial);
+            sill.position.set(0, 0.025, 0.02);
+            elevatorGroup.add(sill);
+
+            // Табло-индикатор
+            const indicatorGeo = new THREE.BoxGeometry(0.3, 0.12, 0.02);
+            indicator = new THREE.Mesh(indicatorGeo, indicatorMaterial);
+            indicator.position.set(0, doorHeight + 0.18, 0.07);
+            elevatorGroup.add(indicator);
+
+            // Интерьер (без задней стенки)
+            const interiorGroup = new THREE.Group();
+            elevatorGroup.add(interiorGroup);
+
+            const sideWallGeo = new THREE.BoxGeometry(0.05, doorHeight, 0.8);
+            const leftSideWall = new THREE.Mesh(sideWallGeo, interiorMaterial);
+            leftSideWall.position.set(-(doorWidth + gap / 2), doorHeight / 2, -0.4);
+            interiorGroup.add(leftSideWall);
+
+            const rightSideWall = new THREE.Mesh(sideWallGeo, interiorMaterial);
+            rightSideWall.position.set(doorWidth + gap / 2, doorHeight / 2, -0.4);
+            interiorGroup.add(rightSideWall);
+
+            const ceilingGeo = new THREE.BoxGeometry(doorWidth * 2, 0.05, 0.8);
+            const ceiling = new THREE.Mesh(ceilingGeo, interiorMaterial);
+            ceiling.position.set(0, doorHeight, -0.4);
+            interiorGroup.add(ceiling);
+
+            const elevatorFloorGeo = new THREE.BoxGeometry(doorWidth * 2, 0.05, 0.85);
+            const elevatorFloor = new THREE.Mesh(elevatorFloorGeo, interiorMaterial);
+            elevatorFloor.position.set(0, 0.025, -0.4);
+            interiorGroup.add(elevatorFloor);
+
+            const lampGeo = new THREE.CircleGeometry(0.1, 24);
+            const lampMat = new THREE.MeshStandardMaterial({
+                color: 0x223344,
+                emissive: 0x112233,
+                emissiveIntensity: 0.3
+            });
+            const lamp = new THREE.Mesh(lampGeo, lampMat);
+            lamp.rotation.x = -Math.PI / 2;
+            lamp.position.set(0, doorHeight - 0.03, -0.4);
+            interiorGroup.add(lamp);
+
+            // Raycaster
+            const raycaster = new THREE.Raycaster();
+            const pointer = new THREE.Vector2();
+
+            function openDoors() {
+                if (doorAnimating || doorsOpen) return;
+                doorAnimating = true;
+                doorsOpen = true;
+                animationStart = performance.now();
+
+                indicator.material.color.set(0x00ff66);
+                indicator.material.emissive.set(0x00ff44);
+                indicator.material.emissiveIntensity = 0.8;
+                indicatorLight.color.set(0x66ffaa);
+                indicatorLight.intensity = 3.5;
+            }
+
+            function onPointerDown(event) {
+                if (doorsOpen || doorAnimating) return;
+                pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+                pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+                raycaster.setFromCamera(pointer, elevatorCamera);
+                const intersects = raycaster.intersectObjects([leftDoor, rightDoor]);
+                if (intersects.length > 0) {
+                    openDoors();
+                    // Скрываем подсказку после клика
+                    document.getElementById('elevator-hint').style.opacity = '0';
+                }
+            }
+
+            elevatorRenderer.domElement.addEventListener('pointerdown', onPointerDown);
+
+            function onPointerMove(event) {
+                if (doorsOpen) {
+                    elevatorRenderer.domElement.style.cursor = 'default';
+                    return;
+                }
+                pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+                pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+                raycaster.setFromCamera(pointer, elevatorCamera);
+                const intersects = raycaster.intersectObjects([leftDoor, rightDoor]);
+                elevatorRenderer.domElement.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
+            }
+
+            elevatorRenderer.domElement.addEventListener('pointermove', onPointerMove);
+
+            // Resize
+            window.addEventListener('resize', () => {
+                if (!elevatorCamera) return;
+                elevatorCamera.aspect = window.innerWidth / window.innerHeight;
+                elevatorCamera.updateProjectionMatrix();
+                elevatorRenderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            // Animation loop
+            function animate() {
+                requestAnimationFrame(animate);
+
+                if (doorAnimating) {
+                    const elapsed = (performance.now() - animationStart) / 1000;
+                    const t = Math.min(elapsed / animationDuration, 1);
+                    const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
+                    leftDoor.position.x = -(doorWidth / 2 + gap / 2) - eased * doorOpenOffset;
+                    rightDoor.position.x = (doorWidth / 2 + gap / 2) + eased * doorOpenOffset;
+
+                    if (t >= 1) {
+                        doorAnimating = false;
+                    }
+                }
+
+                if (elevatorRenderer) {
+                    elevatorRenderer.render(elevatorScene, elevatorCamera);
+                }
+            }
+
+            animate();
+        }
+
+        // Экспортируем функцию для запуска из игрового скрипта
+        window.showElevatorScene = function() {
+            initElevator();
+        };
+    </script>
+</body>
+</html>
