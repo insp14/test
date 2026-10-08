@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <title>Стеклянный короб — текстуры царапин, трещин и металла</title>
+  <title>Стеклянный короб — бело‑голубой металл и заметные царапины</title>
   <style>
     body { margin: 0; overflow: hidden; background: #111; }
     canvas { display: block; }
@@ -57,14 +57,15 @@
       return tex;
     }
 
-    // Текстура стекла: царапины и легкие трещины
+    // Текстура стекла: более заметные царапины и трещины
     const glassTex = createTexture(512, 512, (ctx, w, h) => {
-      ctx.fillStyle = '#e0e8ff';
+      ctx.fillStyle = '#e6f0ff'; // чуть светлее, чтобы царапины выделялись
       ctx.fillRect(0, 0, w, h);
-      ctx.strokeStyle = '#8899aa';
-      ctx.lineWidth = 1;
-      // Царапины
-      for (let i = 0; i < 40; i++) {
+      
+      // Яркие контрастные царапины
+      ctx.strokeStyle = '#6688aa';
+      ctx.lineWidth = 2; // толще, чем раньше
+      for (let i = 0; i < 60; i++) { // больше штук
         const x1 = Math.random() * w, y1 = Math.random() * h;
         const x2 = x1 + (Math.random() - 0.5) * w, y2 = y1 + (Math.random() - 0.5) * h;
         ctx.beginPath();
@@ -72,10 +73,11 @@
         ctx.lineTo(x2, y2);
         ctx.stroke();
       }
-      // Тонкие трещины
-      for (let i = 0; i < 15; i++) {
-        ctx.strokeStyle = '#667788';
-        ctx.lineWidth = 2;
+
+      // Более тёмные трещины для контраста
+      ctx.strokeStyle = '#334466';
+      ctx.lineWidth = 3;
+      for (let i = 0; i < 20; i++) {
         const x1 = Math.random() * w, y1 = Math.random() * h;
         const x2 = x1 + (Math.random() - 0.5) * w, y2 = y1 + (Math.random() - 0.5) * h;
         ctx.beginPath();
@@ -85,23 +87,26 @@
       }
     });
 
-    // Текстура металла: потертости и зернистость
+    // Текстура металла: бело‑голубой оттенок с зернистостью и потертостями
     const metalTex = createTexture(512, 512, (ctx, w, h) => {
-      ctx.fillStyle = '#aaaaaa';
+      // Базовый бело‑голубой цвет
+      ctx.fillStyle = '#cfe8ff';
       ctx.fillRect(0, 0, w, h);
-      ctx.fillStyle = '#cccccc';
-      ctx.globalAlpha = 0.15;
-      // Зернистость
-      for (let i = 0; i < 3000; i++) {
+
+      // Лёгкая зернистость (светлые точки)
+      ctx.fillStyle = '#eaf2ff';
+      ctx.globalAlpha = 0.25;
+      for (let i = 0; i < 3500; i++) {
         const x = Math.random() * w, y = Math.random() * h;
         ctx.fillRect(x, y, 1, 1);
       }
-      ctx.globalAlpha = 0.2;
-      ctx.fillStyle = '#333333';
-      // Потертости
-      for (let i = 0; i < 12; i++) {
+
+      // Потертости (тёмно‑серые пятна)
+      ctx.globalAlpha = 0.3;
+      ctx.fillStyle = '#556688';
+      for (let i = 0; i < 15; i++) {
         ctx.beginPath();
-        ctx.arc(Math.random() * w, Math.random() * h, Math.random() * 60 + 20, 0, Math.PI * 2);
+        ctx.arc(Math.random() * w, Math.random() * h, Math.random() * 70 + 30, 0, Math.PI * 2);
         ctx.fill();
       }
     });
@@ -112,12 +117,12 @@
       color: 0xffffff,
       transparent: true,
       opacity: 0.35,
-      roughness: 0.15,
+      roughness: 0.2,       // чуть более матовое, чтобы царапины читались
       metalness: 0.0,
       ior: 1.5,
       transmission: 0.85,
       clearcoat: 1.0,
-      clearcoatRoughness: 0.15,
+      clearcoatRoughness: 0.2,
       reflectivity: 0.45,
       side: THREE.DoubleSide
     });
@@ -127,9 +132,9 @@
     const ft = 0.02;
     const metalMaterial = new THREE.MeshStandardMaterial({
       map: metalTex,
-      color: 0xbbbbbb,
-      roughness: 0.45,
-      metalness: 0.85
+      color: 0xf0f8ff,       // очень светлый, почти белый, чтобы бело‑голубой тон был основным
+      roughness: 0.5,        // чуть матовее — лучше читается текстура
+      metalness: 0.75        // не «зеркальный хром», а благородный металл
     });
 
     const hw = W / 2;
@@ -173,3 +178,4 @@
   </script>
 </body>
 </html>
+
