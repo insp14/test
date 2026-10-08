@@ -2,7 +2,7 @@
 <html lang="ru">
   <head>
     <meta charset="utf-8" />
-    <title>Лифт в пустоте — только лампа-индикатор</title>
+    <title>Лифт в пустоте — только индикатор</title>
     <style>
       body { margin: 0; overflow: hidden; background: #000; }
       canvas { display: block; }
@@ -23,7 +23,7 @@
     </style>
   </head>
   <body>
-    <div id="hint">Нажмите на двери или кнопку, чтобы открыть лифт</div>
+    <div id="hint">Нажмите на двери, чтобы открыть лифт</div>
 
     <script type="importmap">
       {
@@ -42,7 +42,7 @@
       // ============================================================
       const scene = new THREE.Scene();
       scene.background = new THREE.Color(0x000000);
-      scene.fog = new THREE.FogExp2(0x000000, 0.22); // плотный туман, растворяет всё сразу
+      scene.fog = new THREE.FogExp2(0x000000, 0.22);
 
       // ============================================================
       //  Камера — жёстко зафиксирована
@@ -62,10 +62,12 @@
       document.body.appendChild(renderer.domElement);
 
       // ============================================================
-      //  Освещение — ТОЛЬКО лампа-индикатор
+      //  Освещение
       // ============================================================
+
+      // 1. Лампа-индикатор над дверью (основной источник)
       const indicatorLight = new THREE.PointLight(0xffffff, 2.8, 5.5);
-      indicatorLight.position.set(0, 2.95, 0.35); // прямо над табло
+      indicatorLight.position.set(0, 2.95, 0.35);
       indicatorLight.castShadow = true;
       indicatorLight.shadow.mapSize.set(1024, 1024);
       indicatorLight.shadow.camera.left = -3.5;
@@ -74,8 +76,10 @@
       indicatorLight.shadow.camera.bottom = -1;
       scene.add(indicatorLight);
 
-      // Ambient убран полностью — без него тьма становится «настоящей»
-      // Никаких других источников света нет.
+      // 2. Тусклый холодный свет ровно над лифтом
+      const overheadLight = new THREE.PointLight(0x4466aa, 0.6, 6);
+      overheadLight.position.set(0, 3.8, 0);
+      scene.add(overheadLight);
 
       // ============================================================
       //  Процедурные текстуры
@@ -87,7 +91,6 @@
         canvas.height = 512;
         const ctx = canvas.getContext('2d');
 
-        // Металлический градиент
         const grad = ctx.createLinearGradient(0, 0, 256, 0);
         grad.addColorStop(0, '#333338');
         grad.addColorStop(0.5, '#4a4a52');
@@ -95,7 +98,6 @@
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, 256, 512);
 
-        // Вертикальные рёбра
         for (let i = 0; i < 256; i += 32) {
           ctx.fillStyle = 'rgba(0,0,0,0.18)';
           ctx.fillRect(i, 0, 2, 512);
@@ -103,7 +105,6 @@
           ctx.fillRect(i + 2, 0, 1, 512);
         }
 
-        // Лёгкие царапины/шум
         for (let i = 0; i < 800; i++) {
           const x = Math.random() * 256;
           const y = Math.random() * 512;
@@ -118,7 +119,6 @@
       }
 
       function createInteriorTexture() {
-        // Текстура «пустоты» — просто тёмный градиент, чтобы не было ощущения «коробки»
         const canvas = document.createElement('canvas');
         canvas.width = 256;
         canvas.height = 512;
@@ -165,29 +165,13 @@
       const interiorMaterial = new THREE.MeshStandardMaterial({
         map: interiorTexture,
         roughness: 0.9,
-        metalness: 0.0,
-        transparent: true,
-        opacity: 1.0
-      });
-
-      const buttonMaterial = new THREE.MeshStandardMaterial({
-        color: 0xff3333,
-        emissive: 0xff1111,
-        emissiveIntensity: 0.35,
-        roughness: 0.3,
-        metalness: 0.2
-      });
-
-      const buttonFrameMaterial = new THREE.MeshStandardMaterial({
-        color: 0x333339,
-        roughness: 0.4,
-        metalness: 0.6
+        metalness: 0.0
       });
 
       const indicatorMaterial = new THREE.MeshStandardMaterial({
-        color: 0x00ff66,
-        emissive: 0x00cc55,
-        emissiveIntensity: 0.65,
+        color: 0xff8800,
+        emissive: 0xff4400,
+        emissiveIntensity: 0.5,
         roughness: 0.25
       });
 
@@ -250,7 +234,7 @@
       elevatorGroup.add(sill);
 
       // ============================================================
-      //  Табло-индикатор (оно же — единственный источник света)
+      //  Табло-индикатор
       // ============================================================
       const indicatorGeo = new THREE.BoxGeometry(0.3, 0.12, 0.02);
       const indicator = new THREE.Mesh(indicatorGeo, indicatorMaterial);
@@ -258,26 +242,12 @@
       elevatorGroup.add(indicator);
 
       // ============================================================
-      //  Кнопка вызова
-      // ============================================================
-      const buttonFrameGeo = new THREE.BoxGeometry(0.12, 0.18, 0.03);
-      const buttonFrame = new THREE.Mesh(buttonFrameGeo, buttonFrameMaterial);
-      buttonFrame.position.set(doorWidth + 0.2, 1.2, 0.08);
-      elevatorGroup.add(buttonFrame);
-
-      const buttonGeo = new THREE.CylinderGeometry(0.025, 0.025, 0.02, 24);
-      const button = new THREE.Mesh(buttonGeo, buttonMaterial);
-      button.rotation.x = Math.PI / 2;
-      button.position.set(doorWidth + 0.2, 1.2, 0.1);
-      elevatorGroup.add(button);
-
-      // ============================================================
-      //  Интерьер лифта (БЕЗ задней стенки — видна пустота)
+      //  Интерьер лифта (без задней стенки)
       // ============================================================
       const interiorGroup = new THREE.Group();
       elevatorGroup.add(interiorGroup);
 
-      // Боковые стены (узкие полоски по краям, чтобы сохранялся объём)
+      // Боковые стены
       const sideWallGeo = new THREE.BoxGeometry(0.05, doorHeight, 0.8);
       const leftSideWall = new THREE.Mesh(sideWallGeo, interiorMaterial);
       leftSideWall.position.set(-(doorWidth + gap / 2), doorHeight / 2, -0.4);
@@ -299,7 +269,7 @@
       elevatorFloor.position.set(0, 0.025, -0.4);
       interiorGroup.add(elevatorFloor);
 
-      // Лампа в потолке (визуальная — не источник света, просто emissive)
+      // Лампа в потолке (декоративная)
       const lampGeo = new THREE.CircleGeometry(0.1, 24);
       const lampMat = new THREE.MeshStandardMaterial({
         color: 0x223344,
@@ -311,10 +281,8 @@
       lamp.position.set(0, doorHeight - 0.03, -0.4);
       interiorGroup.add(lamp);
 
-      // Задней стенки НЕТ — при открытых дверях видна пустота
-
       // ============================================================
-      //  Анимация дверей
+      //  Анимация дверей — только открытие, без закрытия
       // ============================================================
       let doorsOpen = false;
       let doorAnimating = false;
@@ -323,28 +291,19 @@
 
       const doorOpenOffset = doorWidth + gap;
 
-      function toggleDoors() {
-        if (doorAnimating) return;
+      function openDoors() {
+        // Открываем только один раз — повторные клики игнорируем
+        if (doorAnimating || doorsOpen) return;
         doorAnimating = true;
+        doorsOpen = true;
         animationStart = performance.now();
-        doorsOpen = !doorsOpen;
 
-        // При открытии меняем цвет индикатора и интенсивность его света
-        if (doorsOpen) {
-          indicator.material.color.set(0x00ff66);
-          indicator.material.emissive.set(0x00ff44);
-          indicator.material.emissiveIntensity = 0.8;
-          indicatorLight.color.set(0x66ffaa);
-          indicatorLight.intensity = 3.5;
-          button.material.emissiveIntensity = 0.15;
-        } else {
-          indicator.material.color.set(0xff8800);
-          indicator.material.emissive.set(0xff4400);
-          indicator.material.emissiveIntensity = 0.5;
-          indicatorLight.color.set(0xffaa55);
-          indicatorLight.intensity = 2.8;
-          button.material.emissiveIntensity = 0.35;
-        }
+        // Индикатор становится зелёным, свет — холоднее и ярче
+        indicator.material.color.set(0x00ff66);
+        indicator.material.emissive.set(0x00ff44);
+        indicator.material.emissiveIntensity = 0.8;
+        indicatorLight.color.set(0x66ffaa);
+        indicatorLight.intensity = 3.5;
       }
 
       function updateDoorAnimation() {
@@ -354,13 +313,8 @@
         const t = Math.min(elapsed / animationDuration, 1);
         const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 
-        if (doorsOpen) {
-          leftDoor.position.x = -(doorWidth / 2 + gap / 2) - eased * doorOpenOffset;
-          rightDoor.position.x = (doorWidth / 2 + gap / 2) + eased * doorOpenOffset;
-        } else {
-          leftDoor.position.x = -(doorWidth / 2 + gap / 2) - (1 - eased) * doorOpenOffset;
-          rightDoor.position.x = (doorWidth / 2 + gap / 2) + (1 - eased) * doorOpenOffset;
-        }
+        leftDoor.position.x = -(doorWidth / 2 + gap / 2) - eased * doorOpenOffset;
+        rightDoor.position.x = (doorWidth / 2 + gap / 2) + eased * doorOpenOffset;
 
         if (t >= 1) {
           doorAnimating = false;
@@ -368,7 +322,7 @@
       }
 
       // ============================================================
-      //  Raycaster — клик по дверям и кнопке
+      //  Raycaster — клик по дверям
       // ============================================================
       const raycaster = new THREE.Raycaster();
       const pointer = new THREE.Vector2();
@@ -378,24 +332,29 @@
         pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
         raycaster.setFromCamera(pointer, camera);
-        const intersects = raycaster.intersectObjects([leftDoor, rightDoor, buttonFrame, button]);
+        const intersects = raycaster.intersectObjects([leftDoor, rightDoor]);
 
         if (intersects.length > 0) {
-          toggleDoors();
+          openDoors();
         }
       }
 
       renderer.domElement.addEventListener('pointerdown', onPointerDown);
 
       // ============================================================
-      //  Hover — курсор pointer
+      //  Hover — курсор pointer только пока двери закрыты
       // ============================================================
       function onPointerMove(event) {
+        if (doorsOpen) {
+          renderer.domElement.style.cursor = 'default';
+          return;
+        }
+
         pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
         pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
         raycaster.setFromCamera(pointer, camera);
-        const intersects = raycaster.intersectObjects([leftDoor, rightDoor, buttonFrame, button]);
+        const intersects = raycaster.intersectObjects([leftDoor, rightDoor]);
 
         renderer.domElement.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
       }
@@ -424,5 +383,4 @@
     </script>
   </body>
 </html>
-
 
