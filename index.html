@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <title>Короб: горизонтальные разделительные линии на боковых гранях</title>
+  <title>Короб: петли и щеколды на разделительной линии</title>
   <style>
     body { margin: 0; overflow: hidden; background: #111; }
     canvas { display: block; }
@@ -40,7 +40,7 @@
     pointLight.position.set(-5, 5, 5);
     scene.add(pointLight);
 
-    // Размеры короба (как в предыдущей версии без разделения на крышку/основание)
+    // Размеры короба
     const W = 1.6, H = 0.5, D = 1;
 
     function createTexture(width, height, drawFn) {
@@ -55,32 +55,26 @@
       return tex;
     }
 
-    // Текстура стекла: глянец + трещины + сколы
+    // Текстура стекла
     const glassTex = createTexture(512, 512, (ctx, w, h) => {
       ctx.fillStyle = '#f5faff';
       ctx.fillRect(0, 0, w, h);
 
-      // Тонкие царапины
-      ctx.strokeStyle = '#cce0ff';
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = '#cce0ff'; ctx.lineWidth = 1;
       for (let i = 0; i < 30; i++) {
         const x1 = Math.random() * w, y1 = Math.random() * h;
         const x2 = x1 + (Math.random() - 0.5) * w, y2 = y1 + (Math.random() - 0.5) * h;
         ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
       }
 
-      // Толстые трещины
-      ctx.strokeStyle = '#446699';
-      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#446699'; ctx.lineWidth = 3;
       for (let i = 0; i < 40; i++) {
         const x1 = Math.random() * w, y1 = Math.random() * h;
         const x2 = x1 + (Math.random() - 0.5) * w, y2 = y1 + (Math.random() - 0.5) * h;
         ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
       }
 
-      // Сколы по краям
-      ctx.fillStyle = '#223355';
-      ctx.globalAlpha = 0.6;
+      ctx.fillStyle = '#223355'; ctx.globalAlpha = 0.6;
       for (let i = 0; i < 12; i++) {
         const r = Math.random() * 20 + 10;
         let x = Math.random() * w, y = Math.random() * h;
@@ -90,36 +84,29 @@
       }
     });
 
-    // Текстура металла: бело‑голубой + ржавчина
+    // Текстура металла (для окантовки)
     const metalTex = createTexture(512, 512, (ctx, w, h) => {
-      ctx.fillStyle = '#dcf0ff';
-      ctx.fillRect(0, 0, w, h);
-
-      // Зернистость
-      ctx.fillStyle = '#eaf6ff';
-      ctx.globalAlpha = 0.2;
-      for (let i = 0; i < 2500; i++) {
-        ctx.fillRect(Math.random() * w, Math.random() * h, 1, 1);
-      }
-
-      // Потертости
-      ctx.globalAlpha = 0.35;
-      ctx.fillStyle = '#557799';
+      ctx.fillStyle = '#dcf0ff'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#eaf6ff'; ctx.globalAlpha = 0.2;
+      for (let i = 0; i < 2500; i++) ctx.fillRect(Math.random() * w, Math.random() * h, 1, 1);
+      ctx.globalAlpha = 0.35; ctx.fillStyle = '#557799';
       for (let i = 0; i < 10; i++) {
         ctx.beginPath();
         ctx.arc(Math.random() * w, Math.random() * h, Math.random() * 60 + 20, 0, Math.PI * 2);
         ctx.fill();
       }
-
-      // Ржавчина
-      ctx.globalAlpha = 0.7;
-      ctx.fillStyle = '#b85a2a'; 
+      ctx.globalAlpha = 0.7; ctx.fillStyle = '#b85a2a'; 
       for (let i = 0; i < 8; i++) {
         const r = Math.random() * 50 + 15;
-        ctx.beginPath();
-        ctx.arc(Math.random() * w, Math.random() * h, r, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.beginPath(); ctx.arc(Math.random() * w, Math.random() * h, r, 0, Math.PI * 2); ctx.fill();
       }
+    });
+
+    // Материал для петель и щеколд — бледно‑серый, без текстуры, чтобы выделялись
+    const paleGrayMaterial = new THREE.MeshStandardMaterial({
+      color: 0xbdc3c7,
+      roughness: 0.3,
+      metalness: 0.2
     });
 
     const glassMaterial = new THREE.MeshPhysicalMaterial({
@@ -142,15 +129,15 @@
       metalness: 0.8
     });
 
-    const ft = 0.02; // толщина металлической окантовки
+    const ft = 0.02; // толщина окантовки
     const hw = W / 2, hh = H / 2, hd = D / 2, offset = 0.01;
 
-    // Основной стеклянный короб (цельный, как раньше)
+    // Стеклянный короб
     const glassGeometry = new THREE.BoxGeometry(W, H, D);
     const glassBox = new THREE.Mesh(glassGeometry, glassMaterial);
     scene.add(glassBox);
 
-    // Каркас ребер (окантовка по периметру)
+    // Каркас ребер (окантовка)
     const xEdgeGeo = new THREE.BoxGeometry(W - offset, ft, ft);
     [[0, hh + offset/2, hd], [0, hh + offset/2, -hd], [0, -hh - offset/2, hd], [0, -hh - offset/2, -hd]].forEach(p => {
       const e = new THREE.Mesh(xEdgeGeo, metalMaterial);
@@ -172,11 +159,9 @@
       scene.add(e);
     });
 
-    // Горизонтальные разделительные линии на боковых плоскостях (кроме верхней и нижней)
-    // Высота линии — посередине высоты короба
+    // Горизонтальные разделительные линии на боковых плоскостях
     const midY = 0; 
 
-    // Линия на передней и задней плоскости (вдоль оси X)
     const horizLineGeoXZ = new THREE.BoxGeometry(W - offset, ft, ft);
     [hd, -hd].forEach(zPos => {
       const line = new THREE.Mesh(horizLineGeoXZ, metalMaterial);
@@ -184,13 +169,53 @@
       scene.add(line);
     });
 
-    // Линия на левой и правой плоскости (вдоль оси Z)
     const horizLineGeoZX = new THREE.BoxGeometry(ft, ft, D - offset);
     [hw, -hw].forEach(xPos => {
       const line = new THREE.Mesh(horizLineGeoZX, metalMaterial);
       line.position.set(xPos, midY, 0);
       scene.add(line);
     });
+
+    // Петли: на одной из длинных боковых сторон (например, правая грань, x = +hw)
+    // Две маленькие прямоугольные петли на разделительной линии
+    const hingeW = 0.18, hingeH = 0.06, hingeD = 0.03;
+    const hingeGeo = new THREE.BoxGeometry(hingeW, hingeH, hingeD);
+    
+    // Левая петля
+    const hinge1 = new THREE.Mesh(hingeGeo, paleGrayMaterial);
+    hinge1.position.set(hw + 0.02, midY + 0.15, 0);
+    scene.add(hinge1);
+
+    // Правая петля
+    const hinge2 = new THREE.Mesh(hingeGeo, paleGrayMaterial);
+    hinge2.position.set(hw + 0.02, midY - 0.15, 0);
+    scene.add(hinge2);
+
+    // Щеколды: на противоположной длинной боковой стороне (x = -hw)
+    // Каждая щеколда — небольшой вытянутый прямоугольник с «язычком»
+    const latchBaseW = 0.04, latchBaseH = 0.08, latchBaseD = 0.025;
+    const latchArmW = 0.02, latchArmH = 0.1, latchArmD = 0.02;
+
+    const latchBaseGeo = new THREE.BoxGeometry(latchBaseW, latchBaseH, latchBaseD);
+    const latchArmGeo = new THREE.BoxGeometry(latchArmW, latchArmH, latchArmD);
+
+    // Верхняя щеколда
+    const latch1Base = new THREE.Mesh(latchBaseGeo, paleGrayMaterial);
+    latch1Base.position.set(-hw - 0.02, midY + 0.1, 0);
+    scene.add(latch1Base);
+
+    const latch1Arm = new THREE.Mesh(latchArmGeo, paleGrayMaterial);
+    latch1Arm.position.set(-hw - 0.035, midY + 0.13, 0);
+    scene.add(latch1Arm);
+
+    // Нижняя щеколда
+    const latch2Base = new THREE.Mesh(latchBaseGeo, paleGrayMaterial);
+    latch2Base.position.set(-hw - 0.02, midY - 0.1, 0);
+    scene.add(latch2Base);
+
+    const latch2Arm = new THREE.Mesh(latchArmGeo, paleGrayMaterial);
+    latch2Arm.position.set(-hw - 0.035, midY - 0.13, 0);
+    scene.add(latch2Arm);
 
     function animate() {
       requestAnimationFrame(animate);
@@ -207,3 +232,4 @@
   </script>
 </body>
 </html>
+
