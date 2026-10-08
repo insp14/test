@@ -1,7 +1,8 @@
-<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>JUST REMEMBER</title>
     <style>
         @font-face {
@@ -34,6 +35,15 @@
             padding: 60px 40px;
             padding-top: 140px;
             transition: background-color 0.3s, color 0.3s;
+        }
+
+        #game-wrapper {
+            transition: opacity 1.5s ease;
+        }
+
+        #game-wrapper.hidden {
+            opacity: 0;
+            pointer-events: none;
         }
 
         #topbar {
@@ -258,26 +268,26 @@
             50% { opacity: 0; }
         }
 
-        /* === 3D-сцена лифта === */
-        #elevator-container {
+        /* === Сцена лифта === */
+        #elevator-scene {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 400;
             background: #000;
+            z-index: 500;
             opacity: 0;
             visibility: hidden;
-            transition: opacity 1.5s, visibility 1.5s;
+            transition: opacity 1.5s ease, visibility 1.5s ease;
         }
 
-        #elevator-container.active {
+        #elevator-scene.active {
             opacity: 1;
             visibility: visible;
         }
 
-        #elevator-container canvas {
+        #elevator-canvas {
             display: block;
         }
 
@@ -287,28 +297,24 @@
             left: 50%;
             transform: translateX(-50%);
             color: #333;
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'DOSFont', monospace;
             font-size: 13px;
             letter-spacing: 0.5px;
             pointer-events: none;
             user-select: none;
             opacity: 0.5;
-            z-index: 410;
-        }
-
-        /* Плавное скрытие игрового интерфейса */
-        #game-wrapper {
-            transition: opacity 1.5s;
-        }
-
-        #game-wrapper.hidden {
-            opacity: 0;
-            pointer-events: none;
+            z-index: 510;
         }
     </style>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+        }
+    }
+    </script>
 </head>
 <body>
-    <!-- Обёртка для плавного скрытия игры -->
     <div id="game-wrapper">
         <div id="topbar">
             <button id="menu-btn">Меню</button>
@@ -346,33 +352,27 @@
             <hr class="title-line">
         </div>
         <div id="game-container"></div>
-
-        <audio id="bg-music" loop preload="auto">
-            <source src="ambient.mp3" type="audio/mpeg">
-        </audio>
-
-        <audio id="click-sound" preload="auto">
-            <source src="click.mp3" type="audio/mpeg">
-        </audio>
     </div>
 
-    <!-- 3D-сцена лифта (скрыта до момента вызова) -->
-    <div id="elevator-container"></div>
-    <div id="elevator-hint" style="display:none;">Нажмите на двери, чтобы открыть лифт</div>
+    <div id="elevator-scene">
+        <canvas id="elevator-canvas"></canvas>
+        <div id="elevator-hint">Нажмите на двери, чтобы открыть лифт</div>
+    </div>
 
-    <!-- Importmap для Three.js -->
-    <script type="importmap">
-    {
-        "imports": {
-            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-        }
-    }
-    </script>
+    <audio id="bg-music" loop preload="auto">
+        <source src="ambient.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="click-sound" preload="auto">
+        <source src="click.mp3" type="audio/mpeg">
+    </audio>
 
-    <!-- Игровой скрипт -->
-    <script>
-        // --- Общий текст для обеих веток первого выбора ---
+    <script type="module">
+        import * as THREE from 'three';
+
+        // ============================================================
+        //  ИГРОВАЯ ЛОГИКА
+        // ============================================================
+
         const commonText = [
             "Совершенно новое пространство. Далеко не такое пустое как предыдущее. Неизменно одно – в руках стеклянный маленький короб с таинственным куском бумаги.",
             "Вы быстро оглядываетесь по сторонам, словно чувства начинают к Вам возвращаться, и эти чувства – это страх, растерянность, непонимание. Вы боитесь – но это уже хоть что-то, что-то такое, что Вы так давно потеряли – эмоции.",
@@ -390,7 +390,7 @@
             "Однако, эти слова были для Вас пустотой, ведь ничего подобного Вы и не помнили. Пока он задавал дополнительные вопросы о том, что же с Вами все-таки произошло, эффект от лампы начал понемногу спадать и лицо врача стало проявляться.",
             "То, что он говорил Вам было не так важно. Вы смогли разглядеть его лицо. Перед Вами был мужчина: щетина на подбородке, коротко стриженная голова, ни единого шрама, а в правом ухе была маленькая сережка.",
             "Рот маленький, нос вытянутый с горбинкой, глаза различить было тяжело, так как зрение полностью еще к Вам не вернулось.",
-            "«Прошу прощения, Вы меня слушаете? Вы выглядите не собранным, когда я спрашиваю, пожалуйсто, отвечайте на мои вопросы.» - нервно сказал врач.",
+            "«Прошу прощения, Вы меня слушаете? Вы выглядите не собранным, когда я спрашиваю, пожалуйстста, отвечайте на мои вопросы.» - нервно сказал врач.",
             "После длительного расспроса врача Вас о том, помните ли Вы кто Вы такой и как оказались на том месте – он не получил никакого ответа от Вас.",
             "Тяжело вздохнув и на несколько секунд опустив глаза в пол, а затем переведя взгляд на Вас, он тяжело проговорил: «Раз Вы ничего не можете мне сказать, тогда скажу Вам я – уже битый час в коридоре для гостей Вас ожидает пожилой мужчина, он сказал, что пришел к Вам.",
             "Как будете готовы, нажмите на красную кнопку на стене, она просигнализирует и оповестит его о том, что Вы готовы к приему». Заметив Вашу оторопелость от данной новости, врач странно улыбнулся и немедленно покинул палату.",
@@ -400,7 +400,14 @@
             "Наверняка догадываясь о личности Вашего гостя, Вы проводите в раздумьях еще несколько секунд прежде, чем решительно нажмете на кнопку.",
         ];
 
-        // --- Структура сюжета ---
+        // --- Новые абзацы после сцены с лифтом ---
+        const afterElevatorText = [
+            "Вы моргнули — и снова больничная палата. Но что-то неуловимо изменилось. Словно Вы вернулись не из короткого забытья, а из места, которое существует вне времени и пространства. Владелец клиники всё ещё стоял перед Вами, однако его взгляд стал другим — настороженным, изучающим, словно он видел в Вас не пациента, а нечто, чего не мог объяснить сам.",
+            "«Я вижу, Вы снова с нами,» — произнёс он, но голос потерял прежнюю уверенность. Пауза затянулась. Затем он наклонился чуть ближе и тихо, почти шёпотом, спросил: «Скажите мне, пока Вы были... отсутствовали — Вы видели лифт? Двери лифта в темноте?»",
+            "Этот вопрос прозвучал как удар. Как он мог знать? Вы не произнесли ни слова, но по Вашему замешательству — по глазам, по тому, как Вы дёрнулись — он всё понял.",
+            "«Значит, видели,» — кивнул он, и на его губах снова появилась та самая странная улыбка, точь-в-точь как у Вашего врача перед тем, как тот покинул палату. — «В таком случае, у меня для Вас кое-что есть. Нечто, что было найдено при Вас, когда бригада скорой помощи прибыла на место. Стеклянный короб.»",
+        ];
+
         const paragraphs = [
             "Просто представьте: вы скитаетесь по пустому бесконечному пространству с какой-то целью, но вы идете так долго, что забыли – для чего это делаете или вернее почему?",
             "В руках у Вас странный предмет, напоминающий стеклянный короб, в котором находится непонятный кусок бумаги, на котором что-то написано, но разобрать что именно – невозможно.",
@@ -438,7 +445,8 @@
                             "Я уже осведомлен о том, что Вы ничего не помните, а если и помните, то не хотите об этом говорить, как мне сказал Ваш врач.",
                             "Действительно, во время допроса о том, что с Вами произошло Вы так ничего и не сказали, однако некоторые детали Вы прекрасно помнили. И соответственно прекрасно помнили того пожилого мужчину, который толкнул Вас, в момент, когда Вы стояли на проезжей части.",
                             "И в данный момент, когда Вы узнали лицо гостя стало определенно ясно – это два разных человека.",
-                            "__ELEVATOR_SCENE__"
+                            "__ELEVATOR_SCENE__",
+                            ...afterElevatorText
                         ]
                     },
                     {
@@ -459,6 +467,10 @@
         let currentTypingText = '';
         let isChoiceVisible = false;
         const container = document.getElementById('game-container');
+        const gameWrapper = document.getElementById('game-wrapper');
+        const elevatorScene = document.getElementById('elevator-scene');
+        const elevatorHint = document.getElementById('elevator-hint');
+        const elevatorCanvas = document.getElementById('elevator-canvas');
 
         let rollbackCheckpoint = null;
         const rollbackBtn = document.getElementById('rollback-btn');
@@ -576,12 +588,9 @@
             }
 
             currentIndex = rollbackCheckpoint.choiceIndex;
-
             const choiceObj = paragraphs[currentIndex];
             showChoice(choiceObj, false);
-
             currentIndex++;
-
             overlay.classList.remove('active');
         });
 
@@ -646,7 +655,6 @@
 
         function showChoice(choiceObj, enableRollback) {
             choiceMade = false;
-
             rollbackCheckpoint = {
                 choiceIndex: currentIndex,
                 containerChildCount: container.children.length
@@ -671,11 +679,7 @@
                     pendingResult = option.result.slice();
                     if (pendingResult.length > 0) {
                         const firstText = pendingResult.shift();
-                        if (firstText === '__ELEVATOR_SCENE__') {
-                            triggerElevatorScene();
-                        } else {
-                            typeParagraphTracked(firstText);
-                        }
+                        typeParagraphTracked(firstText);
                     }
                 });
                 choiceBlock.appendChild(btn);
@@ -683,114 +687,59 @@
             container.appendChild(choiceBlock);
         }
 
-        // --- Запуск 3D-сцены лифта ---
-        function triggerElevatorScene() {
-            // Плавно скрываем игровой интерфейс
-            const gameWrapper = document.getElementById('game-wrapper');
-            gameWrapper.classList.add('hidden');
+        // ============================================================
+        //  3D-СЦЕНА ЛИФТА
+        // ============================================================
 
-            // Через 1.5с (когда игра исчезнет) показываем лифт
-            setTimeout(() => {
-                const elevatorContainer = document.getElementById('elevator-container');
-                const elevatorHint = document.getElementById('elevator-hint');
-                elevatorContainer.classList.add('active');
-                elevatorHint.style.display = 'block';
-
-                // Вызываем функцию из модуля Three.js
-                if (window.showElevatorScene) {
-                    window.showElevatorScene();
-                }
-            }, 1500);
-        }
-
-        document.body.addEventListener('click', () => {
-            if (overlay.classList.contains('active')) return;
-            if (introOverlay.classList.contains('active')) return;
-            if (isChoiceVisible) return;
-            if (isTyping) {
-                skipTyping();
-                return;
-            }
-            if (pendingResult && pendingResult.length > 0) {
-                const nextText = pendingResult.shift();
-                if (nextText === '__ELEVATOR_SCENE__') {
-                    triggerElevatorScene();
-                } else {
-                    typeParagraphTracked(nextText);
-                }
-                return;
-            }
-            if (currentIndex < paragraphs.length) {
-                const item = paragraphs[currentIndex];
-                if (typeof item === 'string') {
-                    typeParagraphTracked(item);
-                    currentIndex++;
-                } else if (item.type === "choice") {
-                    showChoice(item, true);
-                    currentIndex++;
-                }
-            }
-        });
-    </script>
-
-    <!-- 3D-сцена лифта (Three.js) -->
-    <script type="module">
-        import * as THREE from 'three';
-
-        let elevatorScene = null;
+        let elevatorInited = false;
         let elevatorRenderer = null;
         let elevatorCamera = null;
+        let elevatorThreeScene = null;
         let leftDoor = null;
         let rightDoor = null;
-        let indicator = null;
+        let indicatorMesh = null;
         let indicatorLight = null;
-        let doorsOpen = false;
+        let doorsOpened = false;
         let doorAnimating = false;
-        let animationStart = 0;
-        const animationDuration = 1.5;
-        let initialized = false;
-
-        const doorWidth = 1.0;
-        const doorHeight = 2.6;
-        const doorThickness = 0.09;
-        const gap = 0.015;
-        const doorOpenOffset = doorWidth + gap;
+        let doorAnimStart = 0;
+        let elevatorAnimId = null;
 
         function initElevator() {
-            if (initialized) return;
-            initialized = true;
+            if (elevatorInited) return;
+            elevatorInited = true;
 
-            const container = document.getElementById('elevator-container');
+            const scene3d = new THREE.Scene();
+            scene3d.background = new THREE.Color(0x000000);
+            scene3d.fog = new THREE.FogExp2(0x000000, 0.22);
+            elevatorThreeScene = scene3d;
 
-            elevatorScene = new THREE.Scene();
-            elevatorScene.background = new THREE.Color(0x000000);
-            elevatorScene.fog = new THREE.FogExp2(0x000000, 0.22);
+            const cam = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 0.1, 100);
+            cam.position.set(0, 1.6, 4.8);
+            cam.lookAt(0, 1.6, 0);
+            elevatorCamera = cam;
 
-            elevatorCamera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 0.1, 100);
-            elevatorCamera.position.set(0, 1.6, 4.8);
-            elevatorCamera.lookAt(0, 1.6, 0);
+            const rend = new THREE.WebGLRenderer({ canvas: elevatorCanvas, antialias: true });
+            rend.setSize(window.innerWidth, window.innerHeight);
+            rend.setPixelRatio(window.devicePixelRatio);
+            rend.shadowMap.enabled = true;
+            rend.shadowMap.type = THREE.PCFSoftShadowMap;
+            elevatorRenderer = rend;
 
-            elevatorRenderer = new THREE.WebGLRenderer({ antialias: true });
-            elevatorRenderer.setSize(window.innerWidth, window.innerHeight);
-            elevatorRenderer.setPixelRatio(window.devicePixelRatio);
-            elevatorRenderer.shadowMap.enabled = true;
-            elevatorRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            container.appendChild(elevatorRenderer.domElement);
-
-            // Освещение
-            indicatorLight = new THREE.PointLight(0xffffff, 2.8, 5.5);
-            indicatorLight.position.set(0, 2.95, 0.35);
-            indicatorLight.castShadow = true;
-            indicatorLight.shadow.mapSize.set(1024, 1024);
-            indicatorLight.shadow.camera.left = -3.5;
-            indicatorLight.shadow.camera.right = 3.5;
-            indicatorLight.shadow.camera.top = 4.5;
-            indicatorLight.shadow.camera.bottom = -1;
-            elevatorScene.add(indicatorLight);
+            // Свет
+            const iLight = new THREE.PointLight(0xffffff, 2.8, 5.5);
+            iLight.position.set(0, 2.95, 0.35);
+            iLight.castShadow = true;
+            iLight.shadow.mapSize.set(1024, 1024);
+            iLight.shadow.camera.left = -3.5;
+            iLight.shadow.camera.right = 3.5;
+            iLight.shadow.camera.top = 4.5;
+            iLight.shadow.camera.bottom = -1;
+            scene3d.add(iLight);
+            indicatorLight = iLight;
 
             const overheadLight = new THREE.PointLight(0x4466aa, 1.3, 6);
             overheadLight.position.set(0, 3.8, 0);
-            elevatorScene.add(overheadLight);
+            scene3d.add(overheadLight);
 
             // Текстуры
             function createDoorTexture() {
@@ -816,10 +765,10 @@
                     ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.05})`;
                     ctx.fillRect(x, y, 1, 1);
                 }
-                const texture = new THREE.CanvasTexture(canvas);
-                texture.wrapS = THREE.RepeatWrapping;
-                texture.wrapT = THREE.RepeatWrapping;
-                return texture;
+                const tex = new THREE.CanvasTexture(canvas);
+                tex.wrapS = THREE.RepeatWrapping;
+                tex.wrapT = THREE.RepeatWrapping;
+                return tex;
             }
 
             function createInteriorTexture() {
@@ -833,211 +782,255 @@
                 grad.addColorStop(1, '#000000');
                 ctx.fillStyle = grad;
                 ctx.fillRect(0, 0, 256, 512);
-                const texture = new THREE.CanvasTexture(canvas);
-                texture.wrapS = THREE.RepeatWrapping;
-                texture.wrapT = THREE.RepeatWrapping;
-                return texture;
+                const tex = new THREE.CanvasTexture(canvas);
+                tex.wrapS = THREE.RepeatWrapping;
+                tex.wrapT = THREE.RepeatWrapping;
+                return tex;
             }
 
-            const doorTexture = createDoorTexture();
-            const interiorTexture = createInteriorTexture();
+            const doorTex = createDoorTexture();
+            const interiorTex = createInteriorTexture();
 
-            // Материалы
-            const doorMaterial = new THREE.MeshStandardMaterial({
-                map: doorTexture,
-                roughness: 0.45,
-                metalness: 0.75,
-                side: THREE.DoubleSide
+            const doorMat = new THREE.MeshStandardMaterial({
+                map: doorTex, roughness: 0.45, metalness: 0.75, side: THREE.DoubleSide
             });
-            const frameMaterial = new THREE.MeshStandardMaterial({
-                color: 0x222226,
-                roughness: 0.3,
-                metalness: 0.8
+            const frameMat = new THREE.MeshStandardMaterial({
+                color: 0x222226, roughness: 0.3, metalness: 0.8
             });
-            const trimMaterial = new THREE.MeshStandardMaterial({
-                color: 0x151518,
-                roughness: 0.6,
-                metalness: 0.4
+            const trimMat = new THREE.MeshStandardMaterial({
+                color: 0x151518, roughness: 0.6, metalness: 0.4
             });
-            const interiorMaterial = new THREE.MeshStandardMaterial({
-                map: interiorTexture,
-                roughness: 0.9,
-                metalness: 0.0
+            const interiorMat = new THREE.MeshStandardMaterial({
+                map: interiorTex, roughness: 0.9, metalness: 0.0
             });
-            const indicatorMaterial = new THREE.MeshStandardMaterial({
-                color: 0xff8800,
-                emissive: 0xff4400,
-                emissiveIntensity: 0.5,
-                roughness: 0.25
+            const indicatorMat = new THREE.MeshStandardMaterial({
+                color: 0xff8800, emissive: 0xff4400, emissiveIntensity: 0.5, roughness: 0.25
             });
 
-            // Группа лифта
-            const elevatorGroup = new THREE.Group();
-            elevatorScene.add(elevatorGroup);
+            const dw = 1.0, dh = 2.6, dt = 0.09, gap = 0.015;
+            const group = new THREE.Group();
+            scene3d.add(group);
 
             // Левая створка
-            const leftDoorGeo = new THREE.BoxGeometry(doorWidth, doorHeight, doorThickness);
-            leftDoor = new THREE.Mesh(leftDoorGeo, doorMaterial);
-            leftDoor.position.set(-(doorWidth / 2 + gap / 2), doorHeight / 2, 0);
-            leftDoor.castShadow = true;
-            leftDoor.receiveShadow = true;
-            elevatorGroup.add(leftDoor);
+            const ldGeo = new THREE.BoxGeometry(dw, dh, dt);
+            const ld = new THREE.Mesh(ldGeo, doorMat);
+            ld.position.set(-(dw / 2 + gap / 2), dh / 2, 0);
+            ld.castShadow = true;
+            ld.receiveShadow = true;
+            group.add(ld);
+            leftDoor = ld;
 
             // Правая створка
-            const rightDoorGeo = new THREE.BoxGeometry(doorWidth, doorHeight, doorThickness);
-            rightDoor = new THREE.Mesh(rightDoorGeo, doorMaterial);
-            rightDoor.position.set(doorWidth / 2 + gap / 2, doorHeight / 2, 0);
-            rightDoor.castShadow = true;
-            rightDoor.receiveShadow = true;
-            elevatorGroup.add(rightDoor);
+            const rdGeo = new THREE.BoxGeometry(dw, dh, dt);
+            const rd = new THREE.Mesh(rdGeo, doorMat);
+            rd.position.set(dw / 2 + gap / 2, dh / 2, 0);
+            rd.castShadow = true;
+            rd.receiveShadow = true;
+            group.add(rd);
+            rightDoor = rd;
 
             // Рама
-            const topFrameGeo = new THREE.BoxGeometry(doorWidth * 2 + 0.3, 0.25, 0.12);
-            const topFrame = new THREE.Mesh(topFrameGeo, frameMaterial);
-            topFrame.position.set(0, doorHeight + 0.125, 0);
-            topFrame.castShadow = true;
-            elevatorGroup.add(topFrame);
+            const tfGeo = new THREE.BoxGeometry(dw * 2 + 0.3, 0.25, 0.12);
+            const tf = new THREE.Mesh(tfGeo, frameMat);
+            tf.position.set(0, dh + 0.125, 0);
+            tf.castShadow = true;
+            group.add(tf);
 
-            const leftFrameGeo = new THREE.BoxGeometry(0.15, doorHeight + 0.25, 0.12);
-            const leftFrame = new THREE.Mesh(leftFrameGeo, frameMaterial);
-            leftFrame.position.set(-(doorWidth + 0.075 + gap / 2), doorHeight / 2, 0);
-            leftFrame.castShadow = true;
-            elevatorGroup.add(leftFrame);
+            const lfGeo = new THREE.BoxGeometry(0.15, dh + 0.25, 0.12);
+            const lf = new THREE.Mesh(lfGeo, frameMat);
+            lf.position.set(-(dw + 0.075 + gap / 2), dh / 2, 0);
+            lf.castShadow = true;
+            group.add(lf);
 
-            const rightFrameGeo = new THREE.BoxGeometry(0.15, doorHeight + 0.25, 0.12);
-            const rightFrame = new THREE.Mesh(rightFrameGeo, frameMaterial);
-            rightFrame.position.set(doorWidth + 0.075 + gap / 2, doorHeight / 2, 0);
-            rightFrame.castShadow = true;
-            elevatorGroup.add(rightFrame);
+            const rfGeo = new THREE.BoxGeometry(0.15, dh + 0.25, 0.12);
+            const rf = new THREE.Mesh(rfGeo, frameMat);
+            rf.position.set(dw + 0.075 + gap / 2, dh / 2, 0);
+            rf.castShadow = true;
+            group.add(rf);
 
-            const sillGeo = new THREE.BoxGeometry(doorWidth * 2 + 0.3, 0.05, 0.14);
-            const sill = new THREE.Mesh(sillGeo, trimMaterial);
+            const sGeo = new THREE.BoxGeometry(dw * 2 + 0.3, 0.05, 0.14);
+            const sill = new THREE.Mesh(sGeo, trimMat);
             sill.position.set(0, 0.025, 0.02);
-            elevatorGroup.add(sill);
+            group.add(sill);
 
-            // Табло-индикатор
-            const indicatorGeo = new THREE.BoxGeometry(0.3, 0.12, 0.02);
-            indicator = new THREE.Mesh(indicatorGeo, indicatorMaterial);
-            indicator.position.set(0, doorHeight + 0.18, 0.07);
-            elevatorGroup.add(indicator);
+            // Индикатор
+            const indGeo = new THREE.BoxGeometry(0.3, 0.12, 0.02);
+            const ind = new THREE.Mesh(indGeo, indicatorMat);
+            ind.position.set(0, dh + 0.18, 0.07);
+            group.add(ind);
+            indicatorMesh = ind;
 
             // Интерьер (без задней стенки)
-            const interiorGroup = new THREE.Group();
-            elevatorGroup.add(interiorGroup);
+            const ig = new THREE.Group();
+            group.add(ig);
 
-            const sideWallGeo = new THREE.BoxGeometry(0.05, doorHeight, 0.8);
-            const leftSideWall = new THREE.Mesh(sideWallGeo, interiorMaterial);
-            leftSideWall.position.set(-(doorWidth + gap / 2), doorHeight / 2, -0.4);
-            interiorGroup.add(leftSideWall);
+            const swGeo = new THREE.BoxGeometry(0.05, dh, 0.8);
+            const lsw = new THREE.Mesh(swGeo, interiorMat);
+            lsw.position.set(-(dw + gap / 2), dh / 2, -0.4);
+            ig.add(lsw);
 
-            const rightSideWall = new THREE.Mesh(sideWallGeo, interiorMaterial);
-            rightSideWall.position.set(doorWidth + gap / 2, doorHeight / 2, -0.4);
-            interiorGroup.add(rightSideWall);
+            const rsw = new THREE.Mesh(swGeo, interiorMat);
+            rsw.position.set(dw + gap / 2, dh / 2, -0.4);
+            ig.add(rsw);
 
-            const ceilingGeo = new THREE.BoxGeometry(doorWidth * 2, 0.05, 0.8);
-            const ceiling = new THREE.Mesh(ceilingGeo, interiorMaterial);
-            ceiling.position.set(0, doorHeight, -0.4);
-            interiorGroup.add(ceiling);
+            const cGeo = new THREE.BoxGeometry(dw * 2, 0.05, 0.8);
+            const ceil = new THREE.Mesh(cGeo, interiorMat);
+            ceil.position.set(0, dh, -0.4);
+            ig.add(ceil);
 
-            const elevatorFloorGeo = new THREE.BoxGeometry(doorWidth * 2, 0.05, 0.85);
-            const elevatorFloor = new THREE.Mesh(elevatorFloorGeo, interiorMaterial);
-            elevatorFloor.position.set(0, 0.025, -0.4);
-            interiorGroup.add(elevatorFloor);
+            const efGeo = new THREE.BoxGeometry(dw * 2, 0.05, 0.85);
+            const ef = new THREE.Mesh(efGeo, interiorMat);
+            ef.position.set(0, 0.025, -0.4);
+            ig.add(ef);
 
             const lampGeo = new THREE.CircleGeometry(0.1, 24);
             const lampMat = new THREE.MeshStandardMaterial({
-                color: 0x223344,
-                emissive: 0x112233,
-                emissiveIntensity: 0.3
+                color: 0x223344, emissive: 0x112233, emissiveIntensity: 0.3
             });
             const lamp = new THREE.Mesh(lampGeo, lampMat);
             lamp.rotation.x = -Math.PI / 2;
-            lamp.position.set(0, doorHeight - 0.03, -0.4);
-            interiorGroup.add(lamp);
+            lamp.position.set(0, dh - 0.03, -0.4);
+            ig.add(lamp);
 
             // Raycaster
-            const raycaster = new THREE.Raycaster();
-            const pointer = new THREE.Vector2();
+            const ray = new THREE.Raycaster();
+            const ptr = new THREE.Vector2();
 
-            function openDoors() {
-                if (doorAnimating || doorsOpen) return;
-                doorAnimating = true;
-                doorsOpen = true;
-                animationStart = performance.now();
-
-                indicator.material.color.set(0x00ff66);
-                indicator.material.emissive.set(0x00ff44);
-                indicator.material.emissiveIntensity = 0.8;
-                indicatorLight.color.set(0x66ffaa);
-                indicatorLight.intensity = 3.5;
-            }
-
-            function onPointerDown(event) {
-                if (doorsOpen || doorAnimating) return;
-                pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
-                pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
-                raycaster.setFromCamera(pointer, elevatorCamera);
-                const intersects = raycaster.intersectObjects([leftDoor, rightDoor]);
-                if (intersects.length > 0) {
-                    openDoors();
-                    // Скрываем подсказку после клика
-                    document.getElementById('elevator-hint').style.opacity = '0';
+            function onElevClick(event) {
+                if (doorsOpened || doorAnimating) return;
+                ptr.x = (event.clientX / window.innerWidth) * 2 - 1;
+                ptr.y = -(event.clientY / window.innerHeight) * 2 + 1;
+                ray.setFromCamera(ptr, cam);
+                const hits = ray.intersectObjects([leftDoor, rightDoor]);
+                if (hits.length > 0) {
+                    openElevatorDoors();
                 }
             }
 
-            elevatorRenderer.domElement.addEventListener('pointerdown', onPointerDown);
-
-            function onPointerMove(event) {
-                if (doorsOpen) {
-                    elevatorRenderer.domElement.style.cursor = 'default';
+            function onElevMove(event) {
+                if (doorsOpened) {
+                    elevatorCanvas.style.cursor = 'default';
                     return;
                 }
-                pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
-                pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
-                raycaster.setFromCamera(pointer, elevatorCamera);
-                const intersects = raycaster.intersectObjects([leftDoor, rightDoor]);
-                elevatorRenderer.domElement.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
+                ptr.x = (event.clientX / window.innerWidth) * 2 - 1;
+                ptr.y = -(event.clientY / window.innerHeight) * 2 + 1;
+                ray.setFromCamera(ptr, cam);
+                const hits = ray.intersectObjects([leftDoor, rightDoor]);
+                elevatorCanvas.style.cursor = hits.length > 0 ? 'pointer' : 'default';
             }
 
-            elevatorRenderer.domElement.addEventListener('pointermove', onPointerMove);
+            elevatorCanvas.addEventListener('pointerdown', onElevClick);
+            elevatorCanvas.addEventListener('pointermove', onElevMove);
 
             // Resize
             window.addEventListener('resize', () => {
-                if (!elevatorCamera) return;
+                if (elevatorScene.classList.contains('active')) {
+                    cam.aspect = window.innerWidth / window.innerHeight;
+                    cam.updateProjectionMatrix();
+                    rend.setSize(window.innerWidth, window.innerHeight);
+                }
+            });
+        }
+
+        function openElevatorDoors() {
+            doorAnimating = true;
+            doorsOpened = true;
+            doorAnimStart = performance.now();
+
+            indicatorMesh.material.color.set(0x00ff66);
+            indicatorMesh.material.emissive.set(0x00ff44);
+            indicatorMesh.material.emissiveIntensity = 0.8;
+            indicatorLight.color.set(0x66ffaa);
+            indicatorLight.intensity = 3.5;
+
+            elevatorHint.style.opacity = '0';
+
+            // Через 3 секунды после открытия — возврат к тексту
+            setTimeout(() => {
+                exitElevatorScene();
+            }, 3000);
+        }
+
+        function updateElevatorDoors() {
+            if (!doorAnimating) return;
+            const dw = 1.0, gap = 0.015;
+            const openOffset = dw + gap;
+            const dur = 1.5;
+            const elapsed = (performance.now() - doorAnimStart) / 1000;
+            const t = Math.min(elapsed / dur, 1);
+            const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+            leftDoor.position.x = -(dw / 2 + gap / 2) - eased * openOffset;
+            rightDoor.position.x = (dw / 2 + gap / 2) + eased * openOffset;
+            if (t >= 1) doorAnimating = false;
+        }
+
+        function animateElevator() {
+            elevatorAnimId = requestAnimationFrame(animateElevator);
+            updateElevatorDoors();
+            elevatorRenderer.render(elevatorThreeScene, elevatorCamera);
+        }
+
+        function triggerElevatorScene() {
+            gameWrapper.classList.add('hidden');
+            setTimeout(() => {
+                initElevator();
+                elevatorScene.classList.add('active');
                 elevatorCamera.aspect = window.innerWidth / window.innerHeight;
                 elevatorCamera.updateProjectionMatrix();
                 elevatorRenderer.setSize(window.innerWidth, window.innerHeight);
-            });
-
-            // Animation loop
-            function animate() {
-                requestAnimationFrame(animate);
-
-                if (doorAnimating) {
-                    const elapsed = (performance.now() - animationStart) / 1000;
-                    const t = Math.min(elapsed / animationDuration, 1);
-                    const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-
-                    leftDoor.position.x = -(doorWidth / 2 + gap / 2) - eased * doorOpenOffset;
-                    rightDoor.position.x = (doorWidth / 2 + gap / 2) + eased * doorOpenOffset;
-
-                    if (t >= 1) {
-                        doorAnimating = false;
-                    }
-                }
-
-                if (elevatorRenderer) {
-                    elevatorRenderer.render(elevatorScene, elevatorCamera);
-                }
-            }
-
-            animate();
+                if (!elevatorAnimId) animateElevator();
+            }, 1500);
         }
 
-        // Экспортируем функцию для запуска из игрового скрипта
-        window.showElevatorScene = function() {
-            initElevator();
-        };
+        function exitElevatorScene() {
+            elevatorScene.classList.remove('active');
+            setTimeout(() => {
+                if (elevatorAnimId) {
+                    cancelAnimationFrame(elevatorAnimId);
+                    elevatorAnimId = null;
+                }
+                gameWrapper.classList.remove('hidden');
+                // Автоматически печатаем следующий абзац
+                if (pendingResult && pendingResult.length > 0) {
+                    const nextText = pendingResult.shift();
+                    typeParagraphTracked(nextText);
+                }
+            }, 1500);
+        }
+
+        // ============================================================
+        //  ОБРАБОТКА КЛИКОВ ПО ТЕЛУ — ИГРОВОЙ ПОТОК
+        // ============================================================
+
+        document.body.addEventListener('click', () => {
+            if (overlay.classList.contains('active')) return;
+            if (introOverlay.classList.contains('active')) return;
+            if (elevatorScene.classList.contains('active')) return;
+            if (isChoiceVisible) return;
+            if (isTyping) {
+                skipTyping();
+                return;
+            }
+            if (pendingResult && pendingResult.length > 0) {
+                const nextText = pendingResult.shift();
+                if (nextText === "__ELEVATOR_SCENE__") {
+                    triggerElevatorScene();
+                    return;
+                }
+                typeParagraphTracked(nextText);
+                return;
+            }
+            if (currentIndex < paragraphs.length) {
+                const item = paragraphs[currentIndex];
+                if (typeof item === 'string') {
+                    typeParagraphTracked(item);
+                    currentIndex++;
+                } else if (item.type === "choice") {
+                    showChoice(item, true);
+                    currentIndex++;
+                }
+            }
+        });
     </script>
 </body>
 </html>
