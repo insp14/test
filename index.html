@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <title>Стеклянный короб — управление мышкой</title>
+  <title>Стеклянный короб — минимум пересечений</title>
   <style>
     body { margin: 0; overflow: hidden; background: #111; }
     canvas { display: block; }
@@ -23,14 +23,12 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // === Управление мышкой ===
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.1;
     controls.minDistance = 2;
     controls.maxDistance = 10;
 
-    // Освещение
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
     scene.add(ambientLight);
 
@@ -42,12 +40,10 @@
     pointLight.position.set(-5, 5, 5);
     scene.add(pointLight);
 
-    // Размеры короба
     const W = 2;
     const H = 0.5;
     const D = 1;
 
-    // === СТЕКЛЯННЫЕ ГРАНИ ===
     const glassGeometry = new THREE.BoxGeometry(W, H, D);
     const glassMaterial = new THREE.MeshPhysicalMaterial({
       color: 0xffffff,
@@ -65,95 +61,45 @@
     const glassBox = new THREE.Mesh(glassGeometry, glassMaterial);
     scene.add(glassBox);
 
-    // === МЕТАЛЛИЧЕСКАЯ ОКАНТОВКА ===
-    const ft = 0.03; // толщина прутков рёбер
+    // Тоньше и с небольшим смещением, чтобы стыки не совпадали точно
+    const ft = 0.02; // было 0.03 — теперь тоньше
     const metalMaterial = new THREE.MeshStandardMaterial({
-      color: 0x888888,
-      roughness: 0.25,
-      metalness: 1.0
+      color: 0xaaaaaa,
+      roughness: 0.3,
+      metalness: 0.9
     });
 
     const hw = W / 2;
     const hh = H / 2;
     const hd = D / 2;
 
-    // 12 рёберных прутков
-    const xEdgeGeo = new THREE.BoxGeometry(W, ft, ft);
-    [[0, hh, hd], [0, hh, -hd], [0, -hh, hd], [0, -hh, -hd]].forEach(p => {
+    // Смещение, чтобы рёбра не сходились ровно в одной точке
+    const offset = 0.01;
+
+    // Рёбра вдоль X
+    const xEdgeGeo = new THREE.BoxGeometry(W - offset, ft, ft);
+    [[0, hh + offset/2, hd], [0, hh + offset/2, -hd], [0, -hh - offset/2, hd], [0, -hh - offset/2, -hd]].forEach(p => {
       const e = new THREE.Mesh(xEdgeGeo, metalMaterial);
       e.position.set(...p);
       scene.add(e);
     });
 
-    const yEdgeGeo = new THREE.BoxGeometry(ft, H, ft);
+    // Рёбра вдоль Y
+    const yEdgeGeo = new THREE.BoxGeometry(ft, H - offset, ft);
     [[hw, 0, hd], [hw, 0, -hd], [-hw, 0, hd], [-hw, 0, -hd]].forEach(p => {
       const e = new THREE.Mesh(yEdgeGeo, metalMaterial);
       e.position.set(...p);
       scene.add(e);
     });
 
-    const zEdgeGeo = new THREE.BoxGeometry(ft, ft, D);
-    [[hw, hh, 0], [hw, -hh, 0], [-hw, hh, 0], [-hh, 0, 0]].forEach(p => {
+    // Рёбра вдоль Z
+    const zEdgeGeo = new THREE.BoxGeometry(ft, ft, D - offset);
+    [[hw, hh, 0], [hw, -hh, 0], [-hw, hh, 0], [-hw, -hh, 0]].forEach(p => {
       const e = new THREE.Mesh(zEdgeGeo, metalMaterial);
       e.position.set(...p);
       scene.add(e);
     });
 
-    // Плоские металлические полоски-окантовка на каждой грани
-    const stripT = 0.04; // толщина полоски
-    const stripDepth = 0.005; // выступает над поверхностью грани
-    const margin = 0.02; // отступ от края грани
-
-    function addFaceFrame(normalAxis, sign) {
-      // normalAxis: 'x', 'y', 'z'; sign: +1 or -1
-      const strips = [];
-
-      if (normalAxis === 'z') {
-        const z = sign * (hd + stripDepth / 2);
-        // Верхняя и нижняя полоски (вдоль X)
-        strips.push(new THREE.Mesh(new THREE.BoxGeometry(W - margin * 2, stripT, stripDepth), metalMaterial));
-        strips[strips.length - 1].position.set(0, hh - margin, z);
-        strips.push(new THREE.Mesh(new THREE.BoxGeometry(W - margin * 2, stripT, stripDepth), metalMaterial));
-        strips[strips.length - 1].position.set(0, -hh + margin, z);
-        // Левая и правая полоски (вдоль Y)
-        strips.push(new THREE.Mesh(new THREE.BoxGeometry(stripT, H - margin * 2, stripDepth), metalMaterial));
-        strips[strips.length - 1].position.set(hw - margin, 0, z);
-        strips.push(new THREE.Mesh(new THREE.BoxGeometry(stripT, H - margin * 2, stripDepth), metalMaterial));
-        strips[strips.length - 1].position.set(-hw + margin, 0, z);
-      } else if (normalAxis === 'x') {
-        const x = sign * (hw + stripDepth / 2);
-        strips.push(new THREE.Mesh(new THREE.BoxGeometry(stripDepth, stripT, D - margin * 2), metalMaterial));
-        strips[strips.length - 1].position.set(x, hh - margin, 0);
-        strips.push(new THREE.Mesh(new THREE.BoxGeometry(stripDepth, stripT, D - margin * 2), metalMaterial));
-        strips[strips.length - 1].position.set(x, -hh + margin, 0);
-        strips.push(new THREE.Mesh(new THREE.BoxGeometry(stripDepth, H - margin * 2, stripT), metalMaterial));
-        strips[strips.length - 1].position.set(x, 0, hd - margin);
-        strips.push(new THREE.Mesh(new THREE.BoxGeometry(stripDepth, H - margin * 2, stripT), metalMaterial));
-        strips[strips.length - 1].position.set(x, 0, -hd + margin);
-      } else if (normalAxis === 'y') {
-        const y = sign * (hh + stripDepth / 2);
-        strips.push(new THREE.Mesh(new THREE.BoxGeometry(W - margin * 2, stripDepth, stripT), metalMaterial));
-        strips[strips.length - 1].position.set(0, y, hd - margin);
-        strips.push(new THREE.Mesh(new THREE.BoxGeometry(W - margin * 2, stripDepth, stripT), metalMaterial));
-        strips[strips.length - 1].position.set(0, y, -hd + margin);
-        strips.push(new THREE.Mesh(new THREE.BoxGeometry(stripT, stripDepth, D - margin * 2), metalMaterial));
-        strips[strips.length - 1].position.set(hw - margin, y, 0);
-        strips.push(new THREE.Mesh(new THREE.BoxGeometry(stripT, stripDepth, D - margin * 2), metalMaterial));
-        strips[strips.length - 1].position.set(-hw + margin, y, 0);
-      }
-
-      strips.forEach(s => scene.add(s));
-    }
-
-    // Добавляем окантовку на все 6 граней
-    addFaceFrame('z', 1);
-    addFaceFrame('z', -1);
-    addFaceFrame('x', 1);
-    addFaceFrame('x', -1);
-    addFaceFrame('y', 1);
-    addFaceFrame('y', -1);
-
-    // Анимация (только рендер, без авто-вращения)
     function animate() {
       requestAnimationFrame(animate);
       controls.update();
