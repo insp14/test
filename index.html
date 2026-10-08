@@ -1,235 +1,567 @@
 <!DOCTYPE html>
 <html lang="ru">
-<head>
-  <meta charset="utf-8">
-  <title>Короб: петли и щеколды на разделительной линии</title>
-  <style>
-    body { margin: 0; overflow: hidden; background: #111; }
-    canvas { display: block; }
-  </style>
-</head>
-<body>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-  <script>
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x111111);
+  <head>
+    <meta charset="utf-8" />
+    <title>Лифтовые двери — тестовая сцена</title>
+    <style>
+      body { margin: 0; overflow: hidden; background: #0a0a0a; }
+      canvas { display: block; }
 
-    const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(2.5, 2, 4);
-    camera.lookAt(0, 0, 0);
-
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
-
-    const controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.1;
-    controls.minDistance = 2;
-    controls.maxDistance = 10;
-
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
-    scene.add(ambientLight);
-
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.3);
-    dirLight.position.set(5, 10, 7);
-    scene.add(dirLight);
-
-    const pointLight = new THREE.PointLight(0xffffff, 0.8, 50);
-    pointLight.position.set(-5, 5, 5);
-    scene.add(pointLight);
-
-    // Размеры короба
-    const W = 1.6, H = 0.5, D = 1;
-
-    function createTexture(width, height, drawFn) {
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      drawFn(ctx, width, height);
-      const tex = new THREE.CanvasTexture(canvas);
-      tex.wrapS = THREE.RepeatWrapping;
-      tex.wrapT = THREE.RepeatWrapping;
-      return tex;
-    }
-
-    // Текстура стекла
-    const glassTex = createTexture(512, 512, (ctx, w, h) => {
-      ctx.fillStyle = '#f5faff';
-      ctx.fillRect(0, 0, w, h);
-
-      ctx.strokeStyle = '#cce0ff'; ctx.lineWidth = 1;
-      for (let i = 0; i < 30; i++) {
-        const x1 = Math.random() * w, y1 = Math.random() * h;
-        const x2 = x1 + (Math.random() - 0.5) * w, y2 = y1 + (Math.random() - 0.5) * h;
-        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      #hint {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: #888;
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 14px;
+        letter-spacing: 0.5px;
+        pointer-events: none;
+        user-select: none;
+        opacity: 0.8;
       }
+    </style>
+  </head>
+  <body>
+    <div id="hint">Нажмите на двери лифта, чтобы открыть / закрыть</div>
 
-      ctx.strokeStyle = '#446699'; ctx.lineWidth = 3;
-      for (let i = 0; i < 40; i++) {
-        const x1 = Math.random() * w, y1 = Math.random() * h;
-        const x2 = x1 + (Math.random() - 0.5) * w, y2 = y1 + (Math.random() - 0.5) * h;
-        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
       }
+    </script>
 
-      ctx.fillStyle = '#223355'; ctx.globalAlpha = 0.6;
-      for (let i = 0; i < 12; i++) {
-        const r = Math.random() * 20 + 10;
-        let x = Math.random() * w, y = Math.random() * h;
-        if (Math.random() < 0.4) x = Math.random() < 0.5 ? Math.random() * 40 : w - Math.random() * 40;
-        if (Math.random() < 0.4) y = Math.random() < 0.5 ? Math.random() * 40 : h - Math.random() * 40;
-        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
-      }
-    });
+    <script type="module">
+      import * as THREE from 'three';
+      import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-    // Текстура металла (для окантовки)
-    const metalTex = createTexture(512, 512, (ctx, w, h) => {
-      ctx.fillStyle = '#dcf0ff'; ctx.fillRect(0, 0, w, h);
-      ctx.fillStyle = '#eaf6ff'; ctx.globalAlpha = 0.2;
-      for (let i = 0; i < 2500; i++) ctx.fillRect(Math.random() * w, Math.random() * h, 1, 1);
-      ctx.globalAlpha = 0.35; ctx.fillStyle = '#557799';
-      for (let i = 0; i < 10; i++) {
-        ctx.beginPath();
-        ctx.arc(Math.random() * w, Math.random() * h, Math.random() * 60 + 20, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.globalAlpha = 0.7; ctx.fillStyle = '#b85a2a'; 
-      for (let i = 0; i < 8; i++) {
-        const r = Math.random() * 50 + 15;
-        ctx.beginPath(); ctx.arc(Math.random() * w, Math.random() * h, r, 0, Math.PI * 2); ctx.fill();
-      }
-    });
+      // ============================================================
+      //  Сцена
+      // ============================================================
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x0a0a0a);
+      scene.fog = new THREE.Fog(0x0a0a0a, 8, 20);
 
-    // Материал для петель и щеколд — бледно‑серый, без текстуры, чтобы выделялись
-    const paleGrayMaterial = new THREE.MeshStandardMaterial({
-      color: 0xbdc3c7,
-      roughness: 0.3,
-      metalness: 0.2
-    });
+      // ============================================================
+      //  Камера — смотрит прямо на двери
+      // ============================================================
+      const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+      camera.position.set(0, 1.6, 4.5);
+      camera.lookAt(0, 1.6, 0);
 
-    const glassMaterial = new THREE.MeshPhysicalMaterial({
-      map: glassTex,
-      transparent: true,
-      opacity: 0.32,
-      roughness: 0.05,
-      metalness: 0.0,
-      ior: 1.52,
-      transmission: 0.9,
-      clearcoat: 1.0,
-      clearcoatRoughness: 0.03,
-      reflectivity: 0.55,
-      side: THREE.DoubleSide
-    });
-
-    const metalMaterial = new THREE.MeshStandardMaterial({
-      map: metalTex,
-      roughness: 0.45,
-      metalness: 0.8
-    });
-
-    const ft = 0.02; // толщина окантовки
-    const hw = W / 2, hh = H / 2, hd = D / 2, offset = 0.01;
-
-    // Стеклянный короб
-    const glassGeometry = new THREE.BoxGeometry(W, H, D);
-    const glassBox = new THREE.Mesh(glassGeometry, glassMaterial);
-    scene.add(glassBox);
-
-    // Каркас ребер (окантовка)
-    const xEdgeGeo = new THREE.BoxGeometry(W - offset, ft, ft);
-    [[0, hh + offset/2, hd], [0, hh + offset/2, -hd], [0, -hh - offset/2, hd], [0, -hh - offset/2, -hd]].forEach(p => {
-      const e = new THREE.Mesh(xEdgeGeo, metalMaterial);
-      e.position.set(...p);
-      scene.add(e);
-    });
-
-    const yEdgeGeo = new THREE.BoxGeometry(ft, H - offset, ft);
-    [[hw, 0, hd], [hw, 0, -hd], [-hw, 0, hd], [-hw, 0, -hd]].forEach(p => {
-      const e = new THREE.Mesh(yEdgeGeo, metalMaterial);
-      e.position.set(...p);
-      scene.add(e);
-    });
-
-    const zEdgeGeo = new THREE.BoxGeometry(ft, ft, D - offset);
-    [[hw, hh, 0], [hw, -hh, 0], [-hw, hh, 0], [-hw, -hh, 0]].forEach(p => {
-      const e = new THREE.Mesh(zEdgeGeo, metalMaterial);
-      e.position.set(...p);
-      scene.add(e);
-    });
-
-    // Горизонтальные разделительные линии на боковых плоскостях
-    const midY = 0; 
-
-    const horizLineGeoXZ = new THREE.BoxGeometry(W - offset, ft, ft);
-    [hd, -hd].forEach(zPos => {
-      const line = new THREE.Mesh(horizLineGeoXZ, metalMaterial);
-      line.position.set(0, midY, zPos);
-      scene.add(line);
-    });
-
-    const horizLineGeoZX = new THREE.BoxGeometry(ft, ft, D - offset);
-    [hw, -hw].forEach(xPos => {
-      const line = new THREE.Mesh(horizLineGeoZX, metalMaterial);
-      line.position.set(xPos, midY, 0);
-      scene.add(line);
-    });
-
-    // Петли: на одной из длинных боковых сторон (например, правая грань, x = +hw)
-    // Две маленькие прямоугольные петли на разделительной линии
-    const hingeW = 0.18, hingeH = 0.06, hingeD = 0.03;
-    const hingeGeo = new THREE.BoxGeometry(hingeW, hingeH, hingeD);
-    
-    // Левая петля
-    const hinge1 = new THREE.Mesh(hingeGeo, paleGrayMaterial);
-    hinge1.position.set(hw + 0.02, midY + 0.15, 0);
-    scene.add(hinge1);
-
-    // Правая петля
-    const hinge2 = new THREE.Mesh(hingeGeo, paleGrayMaterial);
-    hinge2.position.set(hw + 0.02, midY - 0.15, 0);
-    scene.add(hinge2);
-
-    // Щеколды: на противоположной длинной боковой стороне (x = -hw)
-    // Каждая щеколда — небольшой вытянутый прямоугольник с «язычком»
-    const latchBaseW = 0.04, latchBaseH = 0.08, latchBaseD = 0.025;
-    const latchArmW = 0.02, latchArmH = 0.1, latchArmD = 0.02;
-
-    const latchBaseGeo = new THREE.BoxGeometry(latchBaseW, latchBaseH, latchBaseD);
-    const latchArmGeo = new THREE.BoxGeometry(latchArmW, latchArmH, latchArmD);
-
-    // Верхняя щеколда
-    const latch1Base = new THREE.Mesh(latchBaseGeo, paleGrayMaterial);
-    latch1Base.position.set(-hw - 0.02, midY + 0.1, 0);
-    scene.add(latch1Base);
-
-    const latch1Arm = new THREE.Mesh(latchArmGeo, paleGrayMaterial);
-    latch1Arm.position.set(-hw - 0.035, midY + 0.13, 0);
-    scene.add(latch1Arm);
-
-    // Нижняя щеколда
-    const latch2Base = new THREE.Mesh(latchBaseGeo, paleGrayMaterial);
-    latch2Base.position.set(-hw - 0.02, midY - 0.1, 0);
-    scene.add(latch2Base);
-
-    const latch2Arm = new THREE.Mesh(latchArmGeo, paleGrayMaterial);
-    latch2Arm.position.set(-hw - 0.035, midY - 0.13, 0);
-    scene.add(latch2Arm);
-
-    function animate() {
-      requestAnimationFrame(animate);
-      controls.update();
-      renderer.render(scene, camera);
-    }
-    animate();
-
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
+      // ============================================================
+      //  Рендерер
+      // ============================================================
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-  </script>
-</body>
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      document.body.appendChild(renderer.domElement);
+
+      // ============================================================
+      //  Управление орбитой (можно вращать сцену мышью)
+      // ============================================================
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.target.set(0, 1.6, 0);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.08;
+      controls.minDistance = 2.5;
+      controls.maxDistance = 8;
+      controls.maxPolarAngle = Math.PI / 1.8; // чтобы не улетать под пол
+
+      // ============================================================
+      //  Освещение
+      // ============================================================
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.35);
+      scene.add(ambientLight);
+
+      // Основной свет — сверху-спереди
+      const keyLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      keyLight.position.set(2, 6, 4);
+      keyLight.castShadow = true;
+      keyLight.shadow.mapSize.set(2048, 2048);
+      keyLight.shadow.camera.left = -5;
+      keyLight.shadow.camera.right = 5;
+      keyLight.shadow.camera.top = 5;
+      keyLight.shadow.camera.bottom = -5;
+      scene.add(keyLight);
+
+      // Тёплый свет от лифта (имитация лампы над дверью)
+      const elevatorLight = new THREE.PointLight(0xffd9a0, 1.2, 6);
+      elevatorLight.position.set(0, 2.8, 0.3);
+      scene.add(elevatorLight);
+
+      // Холодный свет изнутри лифта (видно при открытых дверях)
+      const interiorLight = new THREE.PointLight(0xaaccff, 0.6, 4);
+      interiorLight.position.set(0, 1.6, -0.6);
+      interiorLight.visible = false; // включится при открытии
+      scene.add(interiorLight);
+
+      // ============================================================
+      //  Процедурные текстуры
+      // ============================================================
+
+      // Текстура металлических дверей (вертикальные полосы-бруски)
+      function createDoorTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 512;
+        const ctx = canvas.getContext('2d');
+
+        // Базовый металлический градиент
+        const grad = ctx.createLinearGradient(0, 0, 256, 0);
+        grad.addColorStop(0, '#3a3a3e');
+        grad.addColorStop(0.5, '#4a4a50');
+        grad.addColorStop(1, '#3a3a3e');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 256, 512);
+
+        // Вертикальные рельефные линии
+        for (let i = 0; i < 256; i += 32) {
+          ctx.fillStyle = 'rgba(0,0,0,0.15)';
+          ctx.fillRect(i, 0, 2, 512);
+          ctx.fillStyle = 'rgba(255,255,255,0.05)';
+          ctx.fillRect(i + 2, 0, 1, 512);
+        }
+
+        // Шум / царапины
+        for (let i = 0; i < 600; i++) {
+          const x = Math.random() * 256;
+          const y = Math.random() * 512;
+          const alpha = Math.random() * 0.04;
+          ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+          ctx.fillRect(x, y, 1, 1);
+        }
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        return texture;
+      }
+
+      // Текстура стены (бетон / камень)
+      function createWallTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 256;
+        const ctx = canvas.getContext('2d');
+
+        ctx.fillStyle = '#2a2a2c';
+        ctx.fillRect(0, 0, 256, 256);
+
+        // Шум
+        for (let i = 0; i < 3000; i++) {
+          const x = Math.random() * 256;
+          const y = Math.random() * 256;
+          const v = Math.floor(Math.random() * 30);
+          ctx.fillStyle = `rgb(${42 + v},${42 + v},${44 + v})`;
+          ctx.fillRect(x, y, 2, 2);
+        }
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        return texture;
+      }
+
+      // Текстура пола (мрамор / плитка)
+      function createFloorTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 256;
+        const ctx = canvas.getContext('2d');
+
+        ctx.fillStyle = '#1c1c1e';
+        ctx.fillRect(0, 0, 256, 256);
+
+        // Плитка
+        ctx.strokeStyle = '#0a0a0a';
+        ctx.lineWidth = 3;
+        for (let i = 0; i <= 256; i += 64) {
+          ctx.beginPath();
+          ctx.moveTo(i, 0);
+          ctx.lineTo(i, 256);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(0, i);
+          ctx.lineTo(256, i);
+          ctx.stroke();
+        }
+
+        // Лёгкие блики
+        for (let i = 0; i < 200; i++) {
+          const x = Math.random() * 256;
+          const y = Math.random() * 256;
+          ctx.fillStyle = `rgba(80,80,85,${Math.random() * 0.1})`;
+          ctx.fillRect(x, y, 3, 3);
+        }
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        return texture;
+      }
+
+      // Текстура интерьера лифта
+      function createInteriorTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 512;
+        const ctx = canvas.getContext('2d');
+
+        // Светлый металлический фон
+        const grad = ctx.createLinearGradient(0, 0, 0, 512);
+        grad.addColorStop(0, '#c8c8cc');
+        grad.addColorStop(0.5, '#b0b0b4');
+        grad.addColorStop(1, '#a0a0a4');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 256, 512);
+
+        // Горизонтальные линии (панели)
+        ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 512; i += 64) {
+          ctx.beginPath();
+          ctx.moveTo(0, i);
+          ctx.lineTo(256, i);
+          ctx.stroke();
+        }
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        return texture;
+      }
+
+      // ============================================================
+      //  Материалы
+      // ============================================================
+      const doorTexture = createDoorTexture();
+      const doorMaterial = new THREE.MeshStandardMaterial({
+        map: doorTexture,
+        color: 0xffffff,
+        roughness: 0.4,
+        metalness: 0.7
+      });
+
+      const frameMaterial = new THREE.MeshStandardMaterial({
+        color: 0x2a2a2e,
+        roughness: 0.3,
+        metalness: 0.8
+      });
+
+      const trimMaterial = new THREE.MeshStandardMaterial({
+        color: 0x1a1a1c,
+        roughness: 0.5,
+        metalness: 0.5
+      });
+
+      const wallTexture = createWallTexture();
+      wallTexture.repeat.set(4, 2);
+      const wallMaterial = new THREE.MeshStandardMaterial({
+        map: wallTexture,
+        roughness: 0.9,
+        metalness: 0.1
+      });
+
+      const floorTexture = createFloorTexture();
+      floorTexture.repeat.set(4, 4);
+      const floorMaterial = new THREE.MeshStandardMaterial({
+        map: floorTexture,
+        roughness: 0.4,
+        metalness: 0.2
+      });
+
+      const interiorTexture = createInteriorTexture();
+      const interiorMaterial = new THREE.MeshStandardMaterial({
+        map: interiorTexture,
+        roughness: 0.35,
+        metalness: 0.6
+      });
+
+      const buttonMaterial = new THREE.MeshStandardMaterial({
+        color: 0xff4444,
+        emissive: 0xff2222,
+        emissiveIntensity: 0.4,
+        roughness: 0.3,
+        metalness: 0.2
+      });
+
+      const buttonFrameMaterial = new THREE.MeshStandardMaterial({
+        color: 0x444444,
+        roughness: 0.4,
+        metalness: 0.6
+      });
+
+      const indicatorMaterial = new THREE.MeshStandardMaterial({
+        color: 0x00ff66,
+        emissive: 0x00ff44,
+        emissiveIntensity: 0.5,
+        roughness: 0.3
+      });
+
+      // ============================================================
+      //  Геометрия дверей лифта
+      // ============================================================
+      const doorWidth = 1.0;     // ширина одной створки
+      const doorHeight = 2.6;    // высота
+      const doorThickness = 0.08;
+      const gap = 0.01;           // зазор между створками
+
+      // Группа для всех объектов дверей (удобно кликать)
+      const elevatorGroup = new THREE.Group();
+      scene.add(elevatorGroup);
+
+      // --- Левая створка ---
+      const leftDoorGeo = new THREE.BoxGeometry(doorWidth, doorHeight, doorThickness);
+      const leftDoor = new THREE.Mesh(leftDoorGeo, doorMaterial);
+      leftDoor.position.set(-(doorWidth / 2 + gap / 2), doorHeight / 2, 0);
+      leftDoor.castShadow = true;
+      leftDoor.receiveShadow = true;
+      leftDoor.userData.isDoor = true;
+      elevatorGroup.add(leftDoor);
+
+      // --- Правая створка ---
+      const rightDoorGeo = new THREE.BoxGeometry(doorWidth, doorHeight, doorThickness);
+      const rightDoor = new THREE.Mesh(rightDoorGeo, doorMaterial);
+      rightDoor.position.set(doorWidth / 2 + gap / 2, doorHeight / 2, 0);
+      rightDoor.castShadow = true;
+      rightDoor.receiveShadow = true;
+      rightDoor.userData.isDoor = true;
+      elevatorGroup.add(rightDoor);
+
+      // ============================================================
+      //  Рама вокруг дверей
+      // ============================================================
+
+      // Верхняя перемычка
+      const topFrameGeo = new THREE.BoxGeometry(doorWidth * 2 + 0.3, 0.25, 0.12);
+      const topFrame = new THREE.Mesh(topFrameGeo, frameMaterial);
+      topFrame.position.set(0, doorHeight + 0.125, 0);
+      topFrame.castShadow = true;
+      elevatorGroup.add(topFrame);
+
+      // Левый косяк
+      const leftFrameGeo = new THREE.BoxGeometry(0.15, doorHeight + 0.25, 0.12);
+      const leftFrame = new THREE.Mesh(leftFrameGeo, frameMaterial);
+      leftFrame.position.set(-(doorWidth + 0.075 + gap / 2), doorHeight / 2, 0);
+      leftFrame.castShadow = true;
+      elevatorGroup.add(leftFrame);
+
+      // Правый косяк
+      const rightFrameGeo = new THREE.BoxGeometry(0.15, doorHeight + 0.25, 0.12);
+      const rightFrame = new THREE.Mesh(rightFrameGeo, frameMaterial);
+      rightFrame.position.set(doorWidth + 0.075 + gap / 2, doorHeight / 2, 0);
+      rightFrame.castShadow = true;
+      elevatorGroup.add(rightFrame);
+
+      // Порог (нижняя планка)
+      const sillGeo = new THREE.BoxGeometry(doorWidth * 2 + 0.3, 0.05, 0.14);
+      const sill = new THREE.Mesh(sillGeo, trimMaterial);
+      sill.position.set(0, 0.025, 0.02);
+      sill.receiveShadow = true;
+      elevatorGroup.add(sill);
+
+      // ============================================================
+      //  Табло с номером этажа (над дверью)
+      // ============================================================
+      const indicatorGeo = new THREE.BoxGeometry(0.3, 0.12, 0.02);
+      const indicator = new THREE.Mesh(indicatorGeo, indicatorMaterial);
+      indicator.position.set(0, doorHeight + 0.18, 0.07);
+      elevatorGroup.add(indicator);
+
+      // ============================================================
+      //  Кнопка вызова (справа от дверей)
+      // ============================================================
+      const buttonFrameGeo = new THREE.BoxGeometry(0.12, 0.18, 0.03);
+      const buttonFrame = new THREE.Mesh(buttonFrameGeo, buttonFrameMaterial);
+      buttonFrame.position.set(doorWidth + 0.2, 1.2, 0.08);
+      elevatorGroup.add(buttonFrame);
+
+      const buttonGeo = new THREE.CylinderGeometry(0.025, 0.025, 0.02, 24);
+      const button = new THREE.Mesh(buttonGeo, buttonMaterial);
+      button.rotation.x = Math.PI / 2;
+      button.position.set(doorWidth + 0.2, 1.2, 0.1);
+      elevatorGroup.add(button);
+
+      // ============================================================
+      //  Интерьер лифта (виден при открытых дверях)
+      // ============================================================
+      const interiorGroup = new THREE.Group();
+      elevatorGroup.add(interiorGroup);
+
+      // Задняя стена лифта
+      const backWallGeo = new THREE.BoxGeometry(doorWidth * 2, doorHeight, 0.05);
+      const backWall = new THREE.Mesh(backWallGeo, interiorMaterial);
+      backWall.position.set(0, doorHeight / 2, -0.8);
+      interiorGroup.add(backWall);
+
+      // Боковые стены
+      const sideWallGeo = new THREE.BoxGeometry(0.05, doorHeight, 0.8);
+      const leftSideWall = new THREE.Mesh(sideWallGeo, interiorMaterial);
+      leftSideWall.position.set(-(doorWidth + gap / 2), doorHeight / 2, -0.4);
+      interiorGroup.add(leftSideWall);
+
+      const rightSideWall = new THREE.Mesh(sideWallGeo, interiorMaterial);
+      rightSideWall.position.set(doorWidth + gap / 2, doorHeight / 2, -0.4);
+      interiorGroup.add(rightSideWall);
+
+      // Потолок лифта
+      const ceilingGeo = new THREE.BoxGeometry(doorWidth * 2, 0.05, 0.8);
+      const ceiling = new THREE.Mesh(ceilingGeo, interiorMaterial);
+      ceiling.position.set(0, doorHeight, -0.4);
+      interiorGroup.add(ceiling);
+
+      // Пол лифта
+      const elevatorFloorGeo = new THREE.BoxGeometry(doorWidth * 2, 0.05, 0.85);
+      const elevatorFloor = new THREE.Mesh(elevatorFloorGeo, interiorMaterial);
+      elevatorFloor.position.set(0, 0.025, -0.4);
+      elevatorFloor.receiveShadow = true;
+      interiorGroup.add(elevatorFloor);
+
+      // Лампа в потолке лифта
+      const lampGeo = new THREE.CircleGeometry(0.12, 24);
+      const lampMat = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        emissive: 0xffffff,
+        emissiveIntensity: 1.5
+      });
+      const lamp = new THREE.Mesh(lampGeo, lampMat);
+      lamp.rotation.x = -Math.PI / 2;
+      lamp.position.set(0, doorHeight - 0.03, -0.4);
+      interiorGroup.add(lamp);
+
+      // ============================================================
+      //  Стена за лифтом
+      // ============================================================
+      const wallGeo = new THREE.PlaneGeometry(10, 5);
+      const wall = new THREE.Mesh(wallGeo, wallMaterial);
+      wall.position.set(0, 2.5, -0.15);
+      wall.receiveShadow = true;
+      scene.add(wall);
+
+      // ============================================================
+      //  Пол коридора
+      // ============================================================
+      const floorGeo = new THREE.PlaneGeometry(12, 8);
+      const floor = new THREE.Mesh(floorGeo, floorMaterial);
+      floor.rotation.x = -Math.PI / 2;
+      floor.position.set(0, 0, 0);
+      floor.receiveShadow = true;
+      scene.add(floor);
+
+      // ============================================================
+      //  Анимация открытия / закрытия дверей
+      // ============================================================
+      let doorsOpen = false;
+      let doorAnimating = false;
+      let animationStart = 0;
+      const animationDuration = 1.5; // секунды
+
+      const doorOpenOffset = doorWidth + gap; // на сколько сдвинуть каждую створку
+
+      function toggleDoors() {
+        if (doorAnimating) return;
+        doorAnimating = true;
+        animationStart = performance.now();
+        doorsOpen = !doorsOpen;
+
+        // Кнопка мигает
+        if (!doorsOpen) {
+          button.material.emissiveIntensity = 0.8;
+        } else {
+          button.material.emissiveIntensity = 0.2;
+        }
+
+        // Свет внутри включается при открытии
+        interiorLight.visible = doorsOpen;
+
+        // Меняем цвет табло
+        indicator.material.color.set(doorsOpen ? 0x00ff66 : 0xff8800);
+        indicator.material.emissive.set(doorsOpen ? 0x00ff44 : 0xff4400);
+      }
+
+      function updateDoorAnimation() {
+        if (!doorAnimating) return;
+
+        const elapsed = (performance.now() - animationStart) / 1000;
+        const t = Math.min(elapsed / animationDuration, 1);
+        // easeInOutQuad для плавности
+        const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
+        if (doorsOpen) {
+          leftDoor.position.x = -(doorWidth / 2 + gap / 2) - eased * doorOpenOffset;
+          rightDoor.position.x = (doorWidth / 2 + gap / 2) + eased * doorOpenOffset;
+        } else {
+          leftDoor.position.x = -(doorWidth / 2 + gap / 2) - (1 - eased) * doorOpenOffset;
+          rightDoor.position.x = (doorWidth / 2 + gap / 2) + (1 - eased) * doorOpenOffset;
+        }
+
+        if (t >= 1) {
+          doorAnimating = false;
+        }
+      }
+
+      // ============================================================
+      //  Raycaster — клик по дверям
+      // ============================================================
+      const raycaster = new THREE.Raycaster();
+      const pointer = new THREE.Vector2();
+
+      function onPointerDown(event) {
+        pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+        pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+        raycaster.setFromCamera(pointer, camera);
+        const intersects = raycaster.intersectObjects([leftDoor, rightDoor, buttonFrame, button]);
+
+        if (intersects.length > 0) {
+          toggleDoors();
+        }
+      }
+
+      renderer.domElement.addEventListener('pointerdown', onPointerDown);
+
+      // ============================================================
+      //  Hover-эффект — курсор меняется на pointer
+      // ============================================================
+      function onPointerMove(event) {
+        pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+        pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+        raycaster.setFromCamera(pointer, camera);
+        const intersects = raycaster.intersectObjects([leftDoor, rightDoor, buttonFrame, button]);
+
+        renderer.domElement.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
+      }
+
+      renderer.domElement.addEventListener('pointermove', onPointerMove);
+
+      // ============================================================
+      //  Resize
+      // ============================================================
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      // ============================================================
+      //  Render loop
+      // ============================================================
+      function animate() {
+        requestAnimationFrame(animate);
+        updateDoorAnimation();
+        controls.update();
+        renderer.render(scene, camera);
+      }
+
+      animate();
+    </script>
+  </body>
 </html>
 
