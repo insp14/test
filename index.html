@@ -2,7 +2,6 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>JUST REMEMBER</title>
     <style>
         @font-face {
@@ -233,13 +232,13 @@
             padding: 10px 24px;
         }
 
+        #title-block.hidden {
+            display: none;
+        }
+
         #title-block {
             text-align: center;
             margin-bottom: 50px;
-        }
-
-        #title-block.hidden {
-            display: none;
         }
 
         .title-line {
@@ -308,7 +307,6 @@
     </style>
 </head>
 <body>
-    <!-- Главное меню -->
     <div id="main-menu">
         <div id="menu-title">JUST REMEMBER</div>
         <div class="controls">
@@ -323,7 +321,6 @@
         <button id="menu-btn">Меню</button>
     </div>
 
-    <!-- Окно «Меню» в игре -->
     <div class="overlay" id="overlay">
         <div class="modal">
             <button id="close-menu">&times;</button>
@@ -332,26 +329,25 @@
                 <button class="btn-control" id="theme-toggle">Сменить тему</button>
                 <button class="btn-control" id="rollback-btn" disabled>Откатиться к выбору</button>
                 <button class="btn-control" id="music-toggle">Музыка: вкл</button>
+                <button class="btn-control" id="exit-save-btn">Выйти и сохранить</button>
                 <div class="music-control">
                     <label for="volume-slider">Громкость</label>
                     <input type="range" id="volume-slider" min="0" max="100" value="50">
                 </div>
-                <button class="btn-control" id="exit-save-btn">Выйти и сохранить</button>
             </div>
         </div>
     </div>
 
-    <!-- Отдельное окно «Настройки» на главном меню (без кнопки отката) -->
     <div class="overlay" id="settings-overlay">
         <div class="modal">
             <button id="close-settings">&times;</button>
             <h2>Настройки</h2>
             <div class="controls">
-                <button class="btn-control" id="theme-toggle-mm">Сменить тему</button>
-                <button class="btn-control" id="music-toggle-mm">Музыка: вкл</button>
+                <button class="btn-control" id="settings-theme-toggle">Сменить тему</button>
+                <button class="btn-control" id="settings-music-toggle">Музыка: вкл</button>
                 <div class="music-control">
-                    <label for="volume-slider-mm">Громкость</label>
-                    <input type="range" id="volume-slider-mm" min="0" max="100" value="50">
+                    <label for="settings-volume-slider">Громкость</label>
+                    <input type="range" id="settings-volume-slider" min="0" max="100" value="50">
                 </div>
             </div>
         </div>
@@ -461,6 +457,7 @@
             }
         ];
 
+        // --- Состояние игры ---
         let currentIndex = 0;
         let isTyping = false;
         let typingInterval = null;
@@ -468,18 +465,101 @@
         let pendingResult = null;
         let currentTypingText = '';
         let isChoiceVisible = false;
-        let gameStarted = false;
         const container = document.getElementById('game-container');
 
+        // --- Точка отката ---
         let rollbackCheckpoint = null;
         const rollbackBtn = document.getElementById('rollback-btn');
 
+        // --- Тема ---
+        const themeKey = 'jr_theme';
+        let isDark = localStorage.getItem(themeKey) === 'dark';
+
+        function applyTheme() {
+            const root = document.documentElement;
+            if (isDark) {
+                root.style.setProperty('--bg-color', '#000');
+                root.style.setProperty('--text-color', '#fff');
+                root.style.setProperty('--border-color', '#fff');
+                root.style.setProperty('--topbar-bg', 'rgba(0, 0, 0, 0.7)');
+                root.style.setProperty('--topbar-border', 'rgba(255, 255, 255, 0.3)');
+            } else {
+                root.style.setProperty('--bg-color', '#fff');
+                root.style.setProperty('--text-color', '#000');
+                root.style.setProperty('--border-color', '#000');
+                root.style.setProperty('--topbar-bg', 'rgba(255, 255, 255, 0.8)');
+                root.style.setProperty('--topbar-border', 'rgba(0, 0, 0, 0.3)');
+            }
+        }
+
+        applyTheme();
+
+        function toggleTheme() {
+            isDark = !isDark;
+            localStorage.setItem(themeKey, isDark ? 'dark' : 'light');
+            applyTheme();
+        }
+
+        // --- Звук ---
         const bgMusic = document.getElementById('bg-music');
         const clickSound = document.getElementById('click-sound');
+        const musicToggle = document.getElementById('music-toggle');
+        const settingsMusicToggle = document.getElementById('settings-music-toggle');
+        const volumeSlider = document.getElementById('volume-slider');
+        const settingsVolumeSlider = document.getElementById('settings-volume-slider');
+        const audioKey = 'jr_audio';
         let musicPlaying = true;
 
-        bgMusic.volume = 0.5;
-        clickSound.volume = 0.5;
+        function applyAudioSettings() {
+            let vol = 50, music = true;
+            try {
+                const raw = localStorage.getItem(audioKey);
+                if (raw) {
+                    const s = JSON.parse(raw);
+                    vol = (typeof s.volume === 'number') ? s.volume : 50;
+                    music = (typeof s.music === 'boolean') ? s.music : true;
+                }
+            } catch (e) { /* игнорируем поврежденные данные */ }
+            bgMusic.volume = vol / 100;
+            clickSound.volume = vol / 100;
+            volumeSlider.value = vol;
+            settingsVolumeSlider.value = vol;
+            musicPlaying = music;
+            const label = music ? 'Музыка: вкл' : 'Музыка: выкл';
+            musicToggle.textContent = label;
+            settingsMusicToggle.textContent = label;
+        }
+
+        function persistAudioSettings() {
+            localStorage.setItem(audioKey, JSON.stringify({
+                volume: Math.round(bgMusic.volume * 100),
+                music: musicPlaying
+            }));
+        }
+
+        function setVolume(vol) {
+            bgMusic.volume = vol;
+            clickSound.volume = vol;
+            const pct = Math.round(vol * 100);
+            volumeSlider.value = pct;
+            settingsVolumeSlider.value = pct;
+            persistAudioSettings();
+        }
+
+        function setMusicEnabled(on) {
+            musicPlaying = on;
+            const label = on ? 'Музыка: вкл' : 'Музыка: выкл';
+            musicToggle.textContent = label;
+            settingsMusicToggle.textContent = label;
+            if (on) {
+                bgMusic.play().catch(function () {});
+            } else {
+                bgMusic.pause();
+            }
+            persistAudioSettings();
+        }
+
+        applyAudioSettings();
 
         bgMusic.play().catch(() => {
             const startMusicOnce = () => {
@@ -497,9 +577,14 @@
             clickSound.play().catch(() => {});
         }
 
+        // --- Окна ---
         const overlay = document.getElementById('overlay');
+        const settingsOverlay = document.getElementById('settings-overlay');
+        const introOverlay = document.getElementById('intro-overlay');
         const menuBtn = document.getElementById('menu-btn');
         const closeMenuBtn = document.getElementById('close-menu');
+        const closeSettingsBtn = document.getElementById('close-settings');
+        const introCloseBtn = document.getElementById('intro-close');
 
         menuBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -521,17 +606,11 @@
         // --- Элементы главного меню ---
         const mainMenu = document.getElementById('main-menu');
         const startGameBtn = document.getElementById('start-game-btn');
-        const continueBtn = document.getElementById('continue-game-btn');
+        const continueGameBtn = document.getElementById('continue-game-btn');
         const settingsBtn = document.getElementById('settings-btn');
         const aboutBtn = document.getElementById('about-btn');
         const topbar = document.getElementById('topbar');
         const titleBlock = document.getElementById('title-block');
-
-        const introOverlay = document.getElementById('intro-overlay');
-        const introCloseBtn = document.getElementById('intro-close');
-
-        const settingsOverlay = document.getElementById('settings-overlay');
-        const closeSettingsBtn = document.getElementById('close-settings');
 
         settingsBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -568,75 +647,27 @@
             }
         });
 
-        document.querySelectorAll('.modal').forEach(m => {
+        document.querySelectorAll('.modal').forEach((m) => {
             m.addEventListener('click', (e) => {
                 e.stopPropagation();
             });
         });
 
-        // --- Тема ---
+        // --- Переключатели темы, музыки и громкости ---
         const themeToggle = document.getElementById('theme-toggle');
-        const themeToggleMM = document.getElementById('theme-toggle-mm');
-        let isDark = false;
-
-        function applyTheme() {
-            const root = document.documentElement;
-            if (isDark) {
-                root.style.setProperty('--bg-color', '#000');
-                root.style.setProperty('--text-color', '#fff');
-                root.style.setProperty('--border-color', '#fff');
-                root.style.setProperty('--topbar-bg', 'rgba(0, 0, 0, 0.7)');
-                root.style.setProperty('--topbar-border', 'rgba(255, 255, 255, 0.3)');
-            } else {
-                root.style.setProperty('--bg-color', '#fff');
-                root.style.setProperty('--text-color', '#000');
-                root.style.setProperty('--border-color', '#000');
-                root.style.setProperty('--topbar-bg', 'rgba(255, 255, 255, 0.8)');
-                root.style.setProperty('--topbar-border', 'rgba(0, 0, 0, 0.3)');
-            }
-            saveSettings();
-        }
+        const settingsThemeToggle = document.getElementById('settings-theme-toggle');
 
         themeToggle.addEventListener('click', (e) => {
             e.stopPropagation();
             playClick();
-            isDark = !isDark;
-            applyTheme();
+            toggleTheme();
         });
 
-        themeToggleMM.addEventListener('click', (e) => {
+        settingsThemeToggle.addEventListener('click', (e) => {
             e.stopPropagation();
             playClick();
-            isDark = !isDark;
-            applyTheme();
+            toggleTheme();
         });
-
-        // --- Звук (общие функции для двух окон настроек) ---
-        const musicToggle = document.getElementById('music-toggle');
-        const musicToggleMM = document.getElementById('music-toggle-mm');
-        const volumeSlider = document.getElementById('volume-slider');
-        const volumeSliderMM = document.getElementById('volume-slider-mm');
-
-        function setMusicEnabled(enabled) {
-            musicPlaying = enabled;
-            if (enabled) {
-                bgMusic.play().catch(err => console.log('Воспроизведение заблокировано браузером'));
-            } else {
-                bgMusic.pause();
-            }
-            musicToggle.textContent = enabled ? 'Музыка: вкл' : 'Музыка: выкл';
-            musicToggleMM.textContent = enabled ? 'Музыка: вкл' : 'Музыка: выкл';
-            saveSettings();
-        }
-
-        function setVolume(val) {
-            const vol = val / 100;
-            bgMusic.volume = vol;
-            clickSound.volume = vol;
-            volumeSlider.value = val;
-            volumeSliderMM.value = val;
-            saveSettings();
-        }
 
         musicToggle.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -644,7 +675,7 @@
             setMusicEnabled(!musicPlaying);
         });
 
-        musicToggleMM.addEventListener('click', (e) => {
+        settingsMusicToggle.addEventListener('click', (e) => {
             e.stopPropagation();
             playClick();
             setMusicEnabled(!musicPlaying);
@@ -652,157 +683,59 @@
 
         volumeSlider.addEventListener('input', (e) => {
             e.stopPropagation();
-            setVolume(volumeSlider.value);
+            setVolume(e.target.value / 100);
         });
 
-        volumeSliderMM.addEventListener('input', (e) => {
+        settingsVolumeSlider.addEventListener('input', (e) => {
             e.stopPropagation();
-            setVolume(volumeSliderMM.value);
+            setVolume(e.target.value / 100);
         });
 
-        // --- Сохранение настроек (тема, музыка, громкость) ---
-        const SETTINGS_KEY = 'jr_settings_v1';
-
-        function saveSettings() {
-            try {
-                localStorage.setItem(SETTINGS_KEY, JSON.stringify({
-                    isDark: isDark,
-                    musicPlaying: musicPlaying,
-                    volume: volumeSlider.value
-                }));
-            } catch (err) {}
-        }
-
-        function loadSettings() {
-            let data = null;
-            try {
-                const raw = localStorage.getItem(SETTINGS_KEY);
-                if (raw) data = JSON.parse(raw);
-            } catch (err) {
-                data = null;
-            }
-            if (data) {
-                if (typeof data.isDark === 'boolean') isDark = data.isDark;
-                if (typeof data.musicPlaying === 'boolean') musicPlaying = data.musicPlaying;
-                if (typeof data.volume === 'number') {
-                    const vol = Math.min(100, Math.max(0, data.volume));
-                    bgMusic.volume = vol / 100;
-                    clickSound.volume = vol / 100;
-                    volumeSlider.value = vol;
-                    volumeSliderMM.value = vol;
-                }
-            }
-            applyTheme();
-            musicToggle.textContent = musicPlaying ? 'Музыка: вкл' : 'Музыка: выкл';
-            musicToggleMM.textContent = musicPlaying ? 'Музыка: вкл' : 'Музыка: выкл';
-            if (musicPlaying) {
-                bgMusic.play().catch(() => {});
-            }
-        }
-
-        // --- Сохранение и загрузка прогресса ---
-        const SAVE_KEY = 'jr_save_v1';
+        // --- Система сохранения прогресса ---
+        const SAVE_KEY = 'jr_save';
+        const exitSaveBtn = document.getElementById('exit-save-btn');
 
         function hasSave() {
-            try {
-                return !!localStorage.getItem(SAVE_KEY);
-            } catch (err) {
-                return false;
-            }
+            return localStorage.getItem(SAVE_KEY) !== null;
         }
 
         function updateContinueBtn() {
-            continueBtn.disabled = !hasSave();
+            continueGameBtn.disabled = !hasSave();
         }
 
-        function collectTexts() {
+        function collectVisibleTexts() {
             const texts = [];
-            container.querySelectorAll('.paragraph').forEach(p => texts.push(p.textContent));
-            // Если посреди печати — берем полный текст, а не обрезанный
-            if (isTyping && texts.length > 0) {
-                texts[texts.length - 1] = currentTypingText;
+            const children = Array.prototype.slice.call(container.children);
+            for (let i = 0; i < children.length; i++) {
+                const el = children[i];
+                if (el.classList.contains('choice-block')) break;
+                if (el.classList.contains('paragraph')) {
+                    if (isTyping && i === children.length - 1) {
+                        texts.push(currentTypingText);
+                    } else {
+                        texts.push(el.textContent);
+                    }
+                }
             }
             return texts;
         }
 
-        function saveProgress() {
-            if (!gameStarted) return;
+        function saveGame() {
             const data = {
-                texts: collectTexts(),
-                currentIndex: currentIndex,
-                pending: pendingResult ? pendingResult.slice() : [],
+                texts: collectVisibleTexts(),
                 choiceVisible: isChoiceVisible,
-                choiceIndex: rollbackCheckpoint ? rollbackCheckpoint.choiceIndex : null,
-                rollback: rollbackCheckpoint ? {
-                    choiceIndex: rollbackCheckpoint.choiceIndex,
-                    count: rollbackCheckpoint.containerChildCount
-                } : null
+                currentIndex: currentIndex,
+                pendingResult: pendingResult ? pendingResult.slice() : null,
+                rollbackCheckpoint: rollbackCheckpoint,
+                // Флаг использования отката: true = откат к текущей точке уже потрачен
+                rollbackUsed: rollbackBtn.disabled,
+                savedAt: Date.now()
             };
-            try {
-                localStorage.setItem(SAVE_KEY, JSON.stringify(data));
-            } catch (err) {}
+            localStorage.setItem(SAVE_KEY, JSON.stringify(data));
             updateContinueBtn();
         }
 
-        function restoreFromSave() {
-            let data = null;
-            try {
-                const raw = localStorage.getItem(SAVE_KEY);
-                if (raw) data = JSON.parse(raw);
-            } catch (err) {
-                data = null;
-            }
-            if (!data || !Array.isArray(data.texts)) return false;
-
-            if (isTyping) {
-                clearInterval(typingInterval);
-                isTyping = false;
-            }
-            container.innerHTML = '';
-
-            // Восстанавливаем тексты без анимации печати
-            data.texts.forEach(t => {
-                const p = document.createElement('div');
-                p.className = 'paragraph';
-                p.textContent = t;
-                container.appendChild(p);
-            });
-
-            currentIndex = typeof data.currentIndex === 'number' ? data.currentIndex : 0;
-            pendingResult = Array.isArray(data.pending) ? data.pending.slice() : [];
-            choiceMade = false;
-            isChoiceVisible = false;
-            rollbackCheckpoint = null;
-            rollbackBtn.disabled = true;
-
-            if (data.choiceVisible && typeof data.choiceIndex === 'number' &&
-                paragraphs[data.choiceIndex] && paragraphs[data.choiceIndex].type === 'choice') {
-                // Сохранились прямо на развилке — показываем её заново
-                showChoice(paragraphs[data.choiceIndex], true);
-            } else if (data.rollback) {
-                rollbackCheckpoint = {
-                    choiceIndex: data.rollback.choiceIndex,
-                    containerChildCount: data.rollback.count
-                };
-                rollbackBtn.disabled = false;
-            }
-            return true;
-        }
-
-        function returnToMainMenu() {
-            if (isTyping) {
-                clearInterval(typingInterval);
-                isTyping = false;
-            }
-            gameStarted = false;
-            overlay.classList.remove('active');
-            mainMenu.classList.remove('hidden');
-            topbar.classList.add('hidden');
-            titleBlock.classList.add('hidden');
-            updateContinueBtn();
-        }
-
-        function startNewGame() {
+        function resetStoryState() {
             if (isTyping) {
                 clearInterval(typingInterval);
                 isTyping = false;
@@ -814,44 +747,97 @@
             isChoiceVisible = false;
             rollbackCheckpoint = null;
             rollbackBtn.disabled = true;
-            // Прошлый прогресс теряется — новая игра
-            try {
-                localStorage.removeItem(SAVE_KEY);
-            } catch (err) {}
-            updateContinueBtn();
-            gameStarted = true;
-            mainMenu.classList.add('hidden');
-            topbar.classList.remove('hidden');
-            titleBlock.classList.remove('hidden');
         }
 
-        startGameBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            playClick();
-            startNewGame();
-        });
-
-        continueBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (!hasSave()) return;
-            playClick();
-            if (restoreFromSave()) {
-                gameStarted = true;
-                mainMenu.classList.add('hidden');
-                topbar.classList.remove('hidden');
-                titleBlock.classList.remove('hidden');
+        function restoreGame() {
+            const raw = localStorage.getItem(SAVE_KEY);
+            if (!raw) return;
+            let data;
+            try {
+                data = JSON.parse(raw);
+            } catch (e) {
+                return;
             }
-        });
 
-        // --- Выход с сохранением ---
-        const exitSaveBtn = document.getElementById('exit-save-btn');
+            resetStoryState();
+
+            // Восстанавливаем тексты разом, без анимации печати
+            data.texts.forEach((t) => {
+                const p = document.createElement('div');
+                p.className = 'paragraph';
+                p.textContent = t;
+                container.appendChild(p);
+            });
+
+            // Восстанавливаем точку отката и ФЛАГ использования отката
+            if (data.rollbackCheckpoint) {
+                rollbackCheckpoint = data.rollbackCheckpoint;
+                rollbackBtn.disabled = !!data.rollbackUsed;
+            } else {
+                rollbackBtn.disabled = true;
+            }
+
+            if (data.choiceVisible) {
+                // На момент выхода была открыта развилка — показываем её заново
+                const choiceObj = paragraphs[data.currentIndex - 1];
+                if (choiceObj && choiceObj.type === 'choice') {
+                    currentIndex = data.currentIndex - 1;
+                    showChoice(choiceObj, false);
+                    currentIndex = data.currentIndex;
+                } else {
+                    currentIndex = data.currentIndex;
+                }
+            } else {
+                currentIndex = data.currentIndex;
+                pendingResult = data.pendingResult ? data.pendingResult.slice() : null;
+            }
+
+            window.scrollTo(0, document.body.scrollHeight);
+        }
+
+        // --- Выход в главное меню с сохранением ---
+        function exitToMenu() {
+            saveGame();
+            if (isTyping) {
+                clearInterval(typingInterval);
+                isTyping = false;
+            }
+            overlay.classList.remove('active');
+            mainMenu.classList.remove('hidden');
+            topbar.classList.add('hidden');
+            titleBlock.classList.add('hidden');
+        }
 
         exitSaveBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             playClick();
-            saveProgress();
-            returnToMainMenu();
+            exitToMenu();
         });
+
+        // --- Кнопки главного меню ---
+        startGameBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            playClick();
+            resetStoryState();
+            // Новая игра стирает старое сохранение
+            localStorage.removeItem(SAVE_KEY);
+            updateContinueBtn();
+            mainMenu.classList.add('hidden');
+            topbar.classList.remove('hidden');
+            titleBlock.classList.remove('hidden');
+        });
+
+        continueGameBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            playClick();
+            if (!hasSave()) return;
+            restoreGame();
+            mainMenu.classList.add('hidden');
+            topbar.classList.remove('hidden');
+            titleBlock.classList.remove('hidden');
+        });
+
+        updateContinueBtn();
 
         // --- Откат к выбору ---
         rollbackBtn.addEventListener('click', (e) => {
@@ -884,6 +870,7 @@
             overlay.classList.remove('active');
         });
 
+        // --- Печать текста ---
         function typeParagraph(text) {
             isTyping = true;
             const p = document.createElement('div');
@@ -922,8 +909,8 @@
             typeParagraph(text);
         }
 
+        // --- Показ развилки ---
         function showChoice(choiceObj, enableRollback) {
-            // Сбрасываем флаг выбора — фикс бага с неработающими кнопками второго выбора
             choiceMade = false;
 
             rollbackCheckpoint = {
@@ -958,9 +945,11 @@
             container.appendChild(choiceBlock);
         }
 
+        // --- Продвижение сюжета по клику ---
         document.body.addEventListener('click', () => {
-            if (!gameStarted) return;
+            if (!mainMenu.classList.contains('hidden')) return;
             if (overlay.classList.contains('active')) return;
+            if (settingsOverlay.classList.contains('active')) return;
             if (introOverlay.classList.contains('active')) return;
             if (isChoiceVisible) return;
             if (isTyping) {
@@ -983,10 +972,6 @@
                 }
             }
         });
-
-        // При загрузке страницы: применяем настройки и проверяем наличие сохранения
-        loadSettings();
-        updateContinueBtn();
     </script>
 </body>
 </html>
