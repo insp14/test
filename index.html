@@ -1,8 +1,7 @@
-<!DOCTYPE html>
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>JUST REMEMBER</title>
     <style>
         @font-face {
@@ -37,15 +36,6 @@
             transition: background-color 0.3s, color 0.3s;
         }
 
-        #game-wrapper {
-            transition: opacity 1.5s ease;
-        }
-
-        #game-wrapper.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-
         #topbar {
             position: fixed;
             top: 0;
@@ -60,6 +50,11 @@
             z-index: 200;
             backdrop-filter: blur(4px);
             transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        /* Шапка скрыта, пока открыт главный экран */
+        #topbar.hidden {
+            display: none;
         }
 
         #menu-btn {
@@ -199,6 +194,49 @@
             cursor: pointer;
         }
 
+        /* --- Главное меню --- */
+        #main-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-color);
+            z-index: 400;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 50px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        #main-menu.hidden {
+            display: none;
+        }
+
+        #menu-title {
+            font-size: 36px;
+            font-weight: bold;
+            letter-spacing: 4px;
+            color: var(--text-color);
+            text-align: center;
+        }
+
+        #main-menu .controls {
+            width: 260px;
+        }
+
+        #main-menu .btn-control {
+            font-size: 16px;
+            padding: 10px 24px;
+        }
+
+        /* Блок заголовка над игрой скрыт на главном экране */
+        #title-block.hidden {
+            display: none;
+        }
+
         #title-block {
             text-align: center;
             margin-bottom: 50px;
@@ -267,112 +305,67 @@
         @keyframes blink {
             50% { opacity: 0; }
         }
-
-        /* === Сцена лифта === */
-        #elevator-scene {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #000;
-            z-index: 500;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 1.5s ease, visibility 1.5s ease;
-        }
-
-        #elevator-scene.active {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        #elevator-canvas {
-            display: block;
-        }
-
-        #elevator-hint {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: #333;
-            font-family: 'DOSFont', monospace;
-            font-size: 13px;
-            letter-spacing: 0.5px;
-            pointer-events: none;
-            user-select: none;
-            opacity: 0.5;
-            z-index: 510;
-        }
     </style>
-    <script type="importmap">
-    {
-        "imports": {
-            "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
-        }
-    }
-    </script>
 </head>
 <body>
-    <div id="game-wrapper">
-        <div id="topbar">
-            <button id="menu-btn">Меню</button>
+    <!-- Главное меню вместо стартового описания -->
+    <div id="main-menu">
+        <div id="menu-title">JUST REMEMBER</div>
+        <div class="controls">
+            <button class="btn-control" id="start-game-btn">Новая игра</button>
+            <button class="btn-control" id="settings-btn">Настройки</button>
+            <button class="btn-control" id="about-btn">Об игре</button>
         </div>
+    </div>
 
-        <div class="overlay" id="overlay">
-            <div class="modal">
-                <button id="close-menu">&times;</button>
-                <h2>Меню</h2>
-                <div class="controls">
-                    <button class="btn-control" id="theme-toggle">Сменить тему</button>
-                    <button class="btn-control" id="rollback-btn" disabled>Откатиться к выбору</button>
-                    <button class="btn-control" id="music-toggle">Музыка: вкл</button>
-                    <div class="music-control">
-                        <label for="volume-slider">Громкость</label>
-                        <input type="range" id="volume-slider" min="0" max="100" value="50">
-                    </div>
+    <div id="topbar" class="hidden">
+        <button id="menu-btn">Меню</button>
+    </div>
+
+    <div class="overlay" id="overlay">
+        <div class="modal">
+            <button id="close-menu">&times;</button>
+            <h2>Настройки</h2>
+            <div class="controls">
+                <button class="btn-control" id="theme-toggle">Сменить тему</button>
+                <button class="btn-control" id="rollback-btn" disabled>Откатиться к выбору</button>
+                <button class="btn-control" id="music-toggle">Музыка: вкл</button>
+                <div class="music-control">
+                    <label for="volume-slider">Громкость</label>
+                    <input type="range" id="volume-slider" min="0" max="100" value="50">
                 </div>
             </div>
         </div>
-
-        <div class="overlay" id="intro-overlay">
-            <div class="modal">
-                <h2>Об игре</h2>
-                <p style="margin-bottom: 24px; font-size: 16px; text-align: justify;">
-                    Данная текстовая игра имеет направление на сюжетную составляющую с возможностью выбора варианта развития событий, влияющих на конечный результат. Проникнитесь таинственной историей, которую прожил главный герой и получите те же эмоции, что и он. Удачи!
-                </p>
-                <button class="btn-control" id="intro-close">Понятно</button>
-            </div>
-        </div>
-
-        <div id="title-block">
-            <hr class="title-line">
-            <div id="title">JUST REMEMBER</div>
-            <hr class="title-line">
-        </div>
-        <div id="game-container"></div>
     </div>
 
-    <div id="elevator-scene">
-        <canvas id="elevator-canvas"></canvas>
-        <div id="elevator-hint">Нажмите на двери, чтобы открыть лифт</div>
+    <!-- Окно «Об игре» теперь открывается кнопкой из главного меню -->
+    <div class="overlay" id="intro-overlay">
+        <div class="modal">
+            <h2>Об игре</h2>
+            <p style="margin-bottom: 24px; font-size: 16px; text-align: justify;">
+                Данная текстовая игра имеет направление на сюжетную составляющую с возможностью выбора варианта развития событий, влияющих на конечный результат. Проникнитесь таинственной историей, которую прожил главный герой и получите те же эмоции, что и он. Удачи!
+            </p>
+            <button class="btn-control" id="intro-close">Понятно</button>
+        </div>
     </div>
+
+    <div id="title-block" class="hidden">
+        <hr class="title-line">
+        <div id="title">JUST REMEMBER</div>
+        <hr class="title-line">
+    </div>
+    <div id="game-container"></div>
 
     <audio id="bg-music" loop preload="auto">
         <source src="ambient.mp3" type="audio/mpeg">
     </audio>
+
     <audio id="click-sound" preload="auto">
         <source src="click.mp3" type="audio/mpeg">
     </audio>
 
-    <script type="module">
-        import * as THREE from 'three';
-
-        // ============================================================
-        //  ИГРОВАЯ ЛОГИКА
-        // ============================================================
-
+    <script>
+        // --- Общий текст для обеих веток первого выбора ---
         const commonText = [
             "Совершенно новое пространство. Далеко не такое пустое как предыдущее. Неизменно одно – в руках стеклянный маленький короб с таинственным куском бумаги.",
             "Вы быстро оглядываетесь по сторонам, словно чувства начинают к Вам возвращаться, и эти чувства – это страх, растерянность, непонимание. Вы боитесь – но это уже хоть что-то, что-то такое, что Вы так давно потеряли – эмоции.",
@@ -390,7 +383,7 @@
             "Однако, эти слова были для Вас пустотой, ведь ничего подобного Вы и не помнили. Пока он задавал дополнительные вопросы о том, что же с Вами все-таки произошло, эффект от лампы начал понемногу спадать и лицо врача стало проявляться.",
             "То, что он говорил Вам было не так важно. Вы смогли разглядеть его лицо. Перед Вами был мужчина: щетина на подбородке, коротко стриженная голова, ни единого шрама, а в правом ухе была маленькая сережка.",
             "Рот маленький, нос вытянутый с горбинкой, глаза различить было тяжело, так как зрение полностью еще к Вам не вернулось.",
-            "«Прошу прощения, Вы меня слушаете? Вы выглядите не собранным, когда я спрашиваю, пожалуйстста, отвечайте на мои вопросы.» - нервно сказал врач.",
+            "«Прошу прощения, Вы меня слушаете? Вы выглядите не собранным, когда я спрашиваю, пожалуйста, отвечайте на мои вопросы.» - нервно сказал врач.",
             "После длительного расспроса врача Вас о том, помните ли Вы кто Вы такой и как оказались на том месте – он не получил никакого ответа от Вас.",
             "Тяжело вздохнув и на несколько секунд опустив глаза в пол, а затем переведя взгляд на Вас, он тяжело проговорил: «Раз Вы ничего не можете мне сказать, тогда скажу Вам я – уже битый час в коридоре для гостей Вас ожидает пожилой мужчина, он сказал, что пришел к Вам.",
             "Как будете готовы, нажмите на красную кнопку на стене, она просигнализирует и оповестит его о том, что Вы готовы к приему». Заметив Вашу оторопелость от данной новости, врач странно улыбнулся и немедленно покинул палату.",
@@ -400,14 +393,7 @@
             "Наверняка догадываясь о личности Вашего гостя, Вы проводите в раздумьях еще несколько секунд прежде, чем решительно нажмете на кнопку.",
         ];
 
-        // --- Новые абзацы после сцены с лифтом ---
-        const afterElevatorText = [
-            "Вы моргнули — и снова больничная палата. Но что-то неуловимо изменилось. Словно Вы вернулись не из короткого забытья, а из места, которое существует вне времени и пространства. Владелец клиники всё ещё стоял перед Вами, однако его взгляд стал другим — настороженным, изучающим, словно он видел в Вас не пациента, а нечто, чего не мог объяснить сам.",
-            "«Я вижу, Вы снова с нами,» — произнёс он, но голос потерял прежнюю уверенность. Пауза затянулась. Затем он наклонился чуть ближе и тихо, почти шёпотом, спросил: «Скажите мне, пока Вы были... отсутствовали — Вы видели лифт? Двери лифта в темноте?»",
-            "Этот вопрос прозвучал как удар. Как он мог знать? Вы не произнесли ни слова, но по Вашему замешательству — по глазам, по тому, как Вы дёрнулись — он всё понял.",
-            "«Значит, видели,» — кивнул он, и на его губах снова появилась та самая странная улыбка, точь-в-точь как у Вашего врача перед тем, как тот покинул палату. — «В таком случае, у меня для Вас кое-что есть. Нечто, что было найдено при Вас, когда бригада скорой помощи прибыла на место. Стеклянный короб.»",
-        ];
-
+        // --- Структура сюжета ---
         const paragraphs = [
             "Просто представьте: вы скитаетесь по пустому бесконечному пространству с какой-то целью, но вы идете так долго, что забыли – для чего это делаете или вернее почему?",
             "В руках у Вас странный предмет, напоминающий стеклянный короб, в котором находится непонятный кусок бумаги, на котором что-то написано, но разобрать что именно – невозможно.",
@@ -445,8 +431,6 @@
                             "Я уже осведомлен о том, что Вы ничего не помните, а если и помните, то не хотите об этом говорить, как мне сказал Ваш врач.",
                             "Действительно, во время допроса о том, что с Вами произошло Вы так ничего и не сказали, однако некоторые детали Вы прекрасно помнили. И соответственно прекрасно помнили того пожилого мужчину, который толкнул Вас, в момент, когда Вы стояли на проезжей части.",
                             "И в данный момент, когда Вы узнали лицо гостя стало определенно ясно – это два разных человека.",
-                            "__ELEVATOR_SCENE__",
-                            ...afterElevatorText
                         ]
                     },
                     {
@@ -467,10 +451,6 @@
         let currentTypingText = '';
         let isChoiceVisible = false;
         const container = document.getElementById('game-container');
-        const gameWrapper = document.getElementById('game-wrapper');
-        const elevatorScene = document.getElementById('elevator-scene');
-        const elevatorHint = document.getElementById('elevator-hint');
-        const elevatorCanvas = document.getElementById('elevator-canvas');
 
         let rollbackCheckpoint = null;
         const rollbackBtn = document.getElementById('rollback-btn');
@@ -521,27 +501,68 @@
             }
         });
 
+        // --- Элементы главного меню ---
+        const mainMenu = document.getElementById('main-menu');
+        const startGameBtn = document.getElementById('start-game-btn');
+        const settingsBtn = document.getElementById('settings-btn');
+        const aboutBtn = document.getElementById('about-btn');
+        const topbar = document.getElementById('topbar');
+        const titleBlock = document.getElementById('title-block');
+
         const introOverlay = document.getElementById('intro-overlay');
         const introCloseBtn = document.getElementById('intro-close');
 
-        setTimeout(() => {
-            introOverlay.classList.add('active');
-        }, 500);
+        // Автопоказ «Об игре» убран: окно открывается по кнопке из главного меню
+        settingsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            playClick();
+            overlay.classList.add('active');
+        });
 
-        introCloseBtn.addEventListener('click', () => {
+        aboutBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            playClick();
+            introOverlay.classList.add('active');
+        });
+
+        introCloseBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
             playClick();
             introOverlay.classList.remove('active');
         });
 
         introOverlay.addEventListener('click', (e) => {
             if (e.target === introOverlay) {
-                playClick();
                 introOverlay.classList.remove('active');
             }
         });
 
         document.querySelector('.modal').addEventListener('click', (e) => {
             e.stopPropagation();
+        });
+
+        // --- Запуск новой игры с главного меню ---
+        startGameBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            playClick();
+
+            // Сброс состояния игры
+            if (isTyping) {
+                clearInterval(typingInterval);
+                isTyping = false;
+            }
+            container.innerHTML = '';
+            currentIndex = 0;
+            pendingResult = null;
+            choiceMade = false;
+            isChoiceVisible = false;
+            rollbackCheckpoint = null;
+            rollbackBtn.disabled = true;
+
+            // Прячем главное меню, показываем шапку и заголовок игры
+            mainMenu.classList.add('hidden');
+            topbar.classList.remove('hidden');
+            titleBlock.classList.remove('hidden');
         });
 
         const themeToggle = document.getElementById('theme-toggle');
@@ -588,9 +609,12 @@
             }
 
             currentIndex = rollbackCheckpoint.choiceIndex;
+
             const choiceObj = paragraphs[currentIndex];
             showChoice(choiceObj, false);
+
             currentIndex++;
+
             overlay.classList.remove('active');
         });
 
@@ -654,7 +678,9 @@
         }
 
         function showChoice(choiceObj, enableRollback) {
+            // Сбрасываем флаг выбора — фикс бага с неработающими кнопками второго выбора
             choiceMade = false;
+
             rollbackCheckpoint = {
                 choiceIndex: currentIndex,
                 containerChildCount: container.children.length
@@ -687,325 +713,10 @@
             container.appendChild(choiceBlock);
         }
 
-        // ============================================================
-        //  3D-СЦЕНА ЛИФТА
-        // ============================================================
-
-        let elevatorInited = false;
-        let elevatorRenderer = null;
-        let elevatorCamera = null;
-        let elevatorThreeScene = null;
-        let leftDoor = null;
-        let rightDoor = null;
-        let indicatorMesh = null;
-        let indicatorLight = null;
-        let doorsOpened = false;
-        let doorAnimating = false;
-        let doorAnimStart = 0;
-        let elevatorAnimId = null;
-
-        function initElevator() {
-            if (elevatorInited) return;
-            elevatorInited = true;
-
-            const scene3d = new THREE.Scene();
-            scene3d.background = new THREE.Color(0x000000);
-            scene3d.fog = new THREE.FogExp2(0x000000, 0.22);
-            elevatorThreeScene = scene3d;
-
-            const cam = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 0.1, 100);
-            cam.position.set(0, 1.6, 4.8);
-            cam.lookAt(0, 1.6, 0);
-            elevatorCamera = cam;
-
-            const rend = new THREE.WebGLRenderer({ canvas: elevatorCanvas, antialias: true });
-            rend.setSize(window.innerWidth, window.innerHeight);
-            rend.setPixelRatio(window.devicePixelRatio);
-            rend.shadowMap.enabled = true;
-            rend.shadowMap.type = THREE.PCFSoftShadowMap;
-            elevatorRenderer = rend;
-
-            // Свет
-            const iLight = new THREE.PointLight(0xffffff, 2.8, 5.5);
-            iLight.position.set(0, 2.95, 0.35);
-            iLight.castShadow = true;
-            iLight.shadow.mapSize.set(1024, 1024);
-            iLight.shadow.camera.left = -3.5;
-            iLight.shadow.camera.right = 3.5;
-            iLight.shadow.camera.top = 4.5;
-            iLight.shadow.camera.bottom = -1;
-            scene3d.add(iLight);
-            indicatorLight = iLight;
-
-            const overheadLight = new THREE.PointLight(0x4466aa, 1.3, 6);
-            overheadLight.position.set(0, 3.8, 0);
-            scene3d.add(overheadLight);
-
-            // Текстуры
-            function createDoorTexture() {
-                const canvas = document.createElement('canvas');
-                canvas.width = 256;
-                canvas.height = 512;
-                const ctx = canvas.getContext('2d');
-                const grad = ctx.createLinearGradient(0, 0, 256, 0);
-                grad.addColorStop(0, '#333338');
-                grad.addColorStop(0.5, '#4a4a52');
-                grad.addColorStop(1, '#333338');
-                ctx.fillStyle = grad;
-                ctx.fillRect(0, 0, 256, 512);
-                for (let i = 0; i < 256; i += 32) {
-                    ctx.fillStyle = 'rgba(0,0,0,0.18)';
-                    ctx.fillRect(i, 0, 2, 512);
-                    ctx.fillStyle = 'rgba(255,255,255,0.06)';
-                    ctx.fillRect(i + 2, 0, 1, 512);
-                }
-                for (let i = 0; i < 800; i++) {
-                    const x = Math.random() * 256;
-                    const y = Math.random() * 512;
-                    ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.05})`;
-                    ctx.fillRect(x, y, 1, 1);
-                }
-                const tex = new THREE.CanvasTexture(canvas);
-                tex.wrapS = THREE.RepeatWrapping;
-                tex.wrapT = THREE.RepeatWrapping;
-                return tex;
-            }
-
-            function createInteriorTexture() {
-                const canvas = document.createElement('canvas');
-                canvas.width = 256;
-                canvas.height = 512;
-                const ctx = canvas.getContext('2d');
-                const grad = ctx.createLinearGradient(0, 0, 0, 512);
-                grad.addColorStop(0, '#050507');
-                grad.addColorStop(0.4, '#000000');
-                grad.addColorStop(1, '#000000');
-                ctx.fillStyle = grad;
-                ctx.fillRect(0, 0, 256, 512);
-                const tex = new THREE.CanvasTexture(canvas);
-                tex.wrapS = THREE.RepeatWrapping;
-                tex.wrapT = THREE.RepeatWrapping;
-                return tex;
-            }
-
-            const doorTex = createDoorTexture();
-            const interiorTex = createInteriorTexture();
-
-            const doorMat = new THREE.MeshStandardMaterial({
-                map: doorTex, roughness: 0.45, metalness: 0.75, side: THREE.DoubleSide
-            });
-            const frameMat = new THREE.MeshStandardMaterial({
-                color: 0x222226, roughness: 0.3, metalness: 0.8
-            });
-            const trimMat = new THREE.MeshStandardMaterial({
-                color: 0x151518, roughness: 0.6, metalness: 0.4
-            });
-            const interiorMat = new THREE.MeshStandardMaterial({
-                map: interiorTex, roughness: 0.9, metalness: 0.0
-            });
-            const indicatorMat = new THREE.MeshStandardMaterial({
-                color: 0xff8800, emissive: 0xff4400, emissiveIntensity: 0.5, roughness: 0.25
-            });
-
-            const dw = 1.0, dh = 2.6, dt = 0.09, gap = 0.015;
-            const group = new THREE.Group();
-            scene3d.add(group);
-
-            // Левая створка
-            const ldGeo = new THREE.BoxGeometry(dw, dh, dt);
-            const ld = new THREE.Mesh(ldGeo, doorMat);
-            ld.position.set(-(dw / 2 + gap / 2), dh / 2, 0);
-            ld.castShadow = true;
-            ld.receiveShadow = true;
-            group.add(ld);
-            leftDoor = ld;
-
-            // Правая створка
-            const rdGeo = new THREE.BoxGeometry(dw, dh, dt);
-            const rd = new THREE.Mesh(rdGeo, doorMat);
-            rd.position.set(dw / 2 + gap / 2, dh / 2, 0);
-            rd.castShadow = true;
-            rd.receiveShadow = true;
-            group.add(rd);
-            rightDoor = rd;
-
-            // Рама
-            const tfGeo = new THREE.BoxGeometry(dw * 2 + 0.3, 0.25, 0.12);
-            const tf = new THREE.Mesh(tfGeo, frameMat);
-            tf.position.set(0, dh + 0.125, 0);
-            tf.castShadow = true;
-            group.add(tf);
-
-            const lfGeo = new THREE.BoxGeometry(0.15, dh + 0.25, 0.12);
-            const lf = new THREE.Mesh(lfGeo, frameMat);
-            lf.position.set(-(dw + 0.075 + gap / 2), dh / 2, 0);
-            lf.castShadow = true;
-            group.add(lf);
-
-            const rfGeo = new THREE.BoxGeometry(0.15, dh + 0.25, 0.12);
-            const rf = new THREE.Mesh(rfGeo, frameMat);
-            rf.position.set(dw + 0.075 + gap / 2, dh / 2, 0);
-            rf.castShadow = true;
-            group.add(rf);
-
-            const sGeo = new THREE.BoxGeometry(dw * 2 + 0.3, 0.05, 0.14);
-            const sill = new THREE.Mesh(sGeo, trimMat);
-            sill.position.set(0, 0.025, 0.02);
-            group.add(sill);
-
-            // Индикатор
-            const indGeo = new THREE.BoxGeometry(0.3, 0.12, 0.02);
-            const ind = new THREE.Mesh(indGeo, indicatorMat);
-            ind.position.set(0, dh + 0.18, 0.07);
-            group.add(ind);
-            indicatorMesh = ind;
-
-            // Интерьер (без задней стенки)
-            const ig = new THREE.Group();
-            group.add(ig);
-
-            const swGeo = new THREE.BoxGeometry(0.05, dh, 0.8);
-            const lsw = new THREE.Mesh(swGeo, interiorMat);
-            lsw.position.set(-(dw + gap / 2), dh / 2, -0.4);
-            ig.add(lsw);
-
-            const rsw = new THREE.Mesh(swGeo, interiorMat);
-            rsw.position.set(dw + gap / 2, dh / 2, -0.4);
-            ig.add(rsw);
-
-            const cGeo = new THREE.BoxGeometry(dw * 2, 0.05, 0.8);
-            const ceil = new THREE.Mesh(cGeo, interiorMat);
-            ceil.position.set(0, dh, -0.4);
-            ig.add(ceil);
-
-            const efGeo = new THREE.BoxGeometry(dw * 2, 0.05, 0.85);
-            const ef = new THREE.Mesh(efGeo, interiorMat);
-            ef.position.set(0, 0.025, -0.4);
-            ig.add(ef);
-
-            const lampGeo = new THREE.CircleGeometry(0.1, 24);
-            const lampMat = new THREE.MeshStandardMaterial({
-                color: 0x223344, emissive: 0x112233, emissiveIntensity: 0.3
-            });
-            const lamp = new THREE.Mesh(lampGeo, lampMat);
-            lamp.rotation.x = -Math.PI / 2;
-            lamp.position.set(0, dh - 0.03, -0.4);
-            ig.add(lamp);
-
-            // Raycaster
-            const ray = new THREE.Raycaster();
-            const ptr = new THREE.Vector2();
-
-            function onElevClick(event) {
-                if (doorsOpened || doorAnimating) return;
-                ptr.x = (event.clientX / window.innerWidth) * 2 - 1;
-                ptr.y = -(event.clientY / window.innerHeight) * 2 + 1;
-                ray.setFromCamera(ptr, cam);
-                const hits = ray.intersectObjects([leftDoor, rightDoor]);
-                if (hits.length > 0) {
-                    openElevatorDoors();
-                }
-            }
-
-            function onElevMove(event) {
-                if (doorsOpened) {
-                    elevatorCanvas.style.cursor = 'default';
-                    return;
-                }
-                ptr.x = (event.clientX / window.innerWidth) * 2 - 1;
-                ptr.y = -(event.clientY / window.innerHeight) * 2 + 1;
-                ray.setFromCamera(ptr, cam);
-                const hits = ray.intersectObjects([leftDoor, rightDoor]);
-                elevatorCanvas.style.cursor = hits.length > 0 ? 'pointer' : 'default';
-            }
-
-            elevatorCanvas.addEventListener('pointerdown', onElevClick);
-            elevatorCanvas.addEventListener('pointermove', onElevMove);
-
-            // Resize
-            window.addEventListener('resize', () => {
-                if (elevatorScene.classList.contains('active')) {
-                    cam.aspect = window.innerWidth / window.innerHeight;
-                    cam.updateProjectionMatrix();
-                    rend.setSize(window.innerWidth, window.innerHeight);
-                }
-            });
-        }
-
-        function openElevatorDoors() {
-            doorAnimating = true;
-            doorsOpened = true;
-            doorAnimStart = performance.now();
-
-            indicatorMesh.material.color.set(0x00ff66);
-            indicatorMesh.material.emissive.set(0x00ff44);
-            indicatorMesh.material.emissiveIntensity = 0.8;
-            indicatorLight.color.set(0x66ffaa);
-            indicatorLight.intensity = 3.5;
-
-            elevatorHint.style.opacity = '0';
-
-            // Через 3 секунды после открытия — возврат к тексту
-            setTimeout(() => {
-                exitElevatorScene();
-            }, 3000);
-        }
-
-        function updateElevatorDoors() {
-            if (!doorAnimating) return;
-            const dw = 1.0, gap = 0.015;
-            const openOffset = dw + gap;
-            const dur = 1.5;
-            const elapsed = (performance.now() - doorAnimStart) / 1000;
-            const t = Math.min(elapsed / dur, 1);
-            const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-            leftDoor.position.x = -(dw / 2 + gap / 2) - eased * openOffset;
-            rightDoor.position.x = (dw / 2 + gap / 2) + eased * openOffset;
-            if (t >= 1) doorAnimating = false;
-        }
-
-        function animateElevator() {
-            elevatorAnimId = requestAnimationFrame(animateElevator);
-            updateElevatorDoors();
-            elevatorRenderer.render(elevatorThreeScene, elevatorCamera);
-        }
-
-        function triggerElevatorScene() {
-            gameWrapper.classList.add('hidden');
-            setTimeout(() => {
-                initElevator();
-                elevatorScene.classList.add('active');
-                elevatorCamera.aspect = window.innerWidth / window.innerHeight;
-                elevatorCamera.updateProjectionMatrix();
-                elevatorRenderer.setSize(window.innerWidth, window.innerHeight);
-                if (!elevatorAnimId) animateElevator();
-            }, 1500);
-        }
-
-        function exitElevatorScene() {
-            elevatorScene.classList.remove('active');
-            setTimeout(() => {
-                if (elevatorAnimId) {
-                    cancelAnimationFrame(elevatorAnimId);
-                    elevatorAnimId = null;
-                }
-                gameWrapper.classList.remove('hidden');
-                // Автоматически печатаем следующий абзац
-                if (pendingResult && pendingResult.length > 0) {
-                    const nextText = pendingResult.shift();
-                    typeParagraphTracked(nextText);
-                }
-            }, 1500);
-        }
-
-        // ============================================================
-        //  ОБРАБОТКА КЛИКОВ ПО ТЕЛУ — ИГРОВОЙ ПОТОК
-        // ============================================================
-
         document.body.addEventListener('click', () => {
+            if (!mainMenu.classList.contains('hidden')) return; // на главном экране клики не двигают сюжет
             if (overlay.classList.contains('active')) return;
             if (introOverlay.classList.contains('active')) return;
-            if (elevatorScene.classList.contains('active')) return;
             if (isChoiceVisible) return;
             if (isTyping) {
                 skipTyping();
@@ -1013,10 +724,6 @@
             }
             if (pendingResult && pendingResult.length > 0) {
                 const nextText = pendingResult.shift();
-                if (nextText === "__ELEVATOR_SCENE__") {
-                    triggerElevatorScene();
-                    return;
-                }
                 typeParagraphTracked(nextText);
                 return;
             }
