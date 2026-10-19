@@ -313,7 +313,7 @@
         /* --- Подсказка по управлению --- */
         #hint-box {
             position: fixed;
-            top: 170px;
+            top: 320px;
             left: 50%;
             transform: translateX(-50%);
             background: var(--bg-color);
@@ -415,7 +415,7 @@
     <div id="hint-box" class="hidden">
         <div class="hint-line">"Клик/Пробел" - для показа текста</div>
         <div class="hint-line">Повторный "Клик/Пробел" - пропуск анимации показа текста</div>
-        <div class="hint-line">"Esc" - открытие окна меню</div>
+        <div class="hint-line">"M" - открытие окна меню</div>
     </div>
 
     <div id="title-block" class="hidden">
@@ -1075,9 +1075,8 @@
                 (document.activeElement.tagName === 'INPUT' ||
                  document.activeElement.tagName === 'TEXTAREA');
 
-            if (e.key === 'Escape') {
-                // Esc работает только на игровом экране без открытых окон,
-                // либо закрывает уже открытое окно «Меню»
+            if (e.code === 'KeyM') {
+                // Клавиша M переключает окно «Меню» (работает и в русской раскладке — «ь»)
                 if (isInputFocused) return;
                 if (!overlay.classList.contains('active')) {
                     if (!isGameActive()) return;
