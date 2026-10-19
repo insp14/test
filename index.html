@@ -110,6 +110,13 @@
             color: var(--text-color);
         }
 
+        .modal p.confirm-text {
+            font-size: 16px;
+            text-align: justify;
+            margin-bottom: 24px;
+            color: var(--text-color);
+        }
+
         .controls {
             display: flex;
             flex-direction: column;
@@ -142,8 +149,7 @@
             color: var(--text-color);
         }
 
-        #close-menu,
-        #close-settings {
+        .close-cross {
             position: absolute;
             top: 12px;
             right: 16px;
@@ -194,7 +200,6 @@
             cursor: pointer;
         }
 
-        /* --- Главное меню --- */
         #main-menu {
             position: fixed;
             top: 0;
@@ -232,13 +237,13 @@
             padding: 10px 24px;
         }
 
-        #title-block.hidden {
-            display: none;
-        }
-
         #title-block {
             text-align: center;
             margin-bottom: 50px;
+        }
+
+        #title-block.hidden {
+            display: none;
         }
 
         .title-line {
@@ -307,11 +312,12 @@
     </style>
 </head>
 <body>
+    <!-- Главное меню -->
     <div id="main-menu">
         <div id="menu-title">JUST REMEMBER</div>
         <div class="controls">
             <button class="btn-control" id="start-game-btn">Новая игра</button>
-            <button class="btn-control" id="continue-game-btn" disabled>Продолжить</button>
+            <button class="btn-control" id="continue-btn" disabled>Продолжить</button>
             <button class="btn-control" id="settings-btn">Настройки</button>
             <button class="btn-control" id="about-btn">Об игре</button>
         </div>
@@ -321,38 +327,53 @@
         <button id="menu-btn">Меню</button>
     </div>
 
+    <!-- Меню в игре -->
     <div class="overlay" id="overlay">
         <div class="modal">
-            <button id="close-menu">&times;</button>
+            <button class="close-cross" id="close-menu">&times;</button>
             <h2>Меню</h2>
             <div class="controls">
                 <button class="btn-control" id="theme-toggle">Сменить тему</button>
                 <button class="btn-control" id="rollback-btn" disabled>Откатиться к выбору</button>
-                <button class="btn-control" id="music-toggle">Музыка: вкл</button>
-                <button class="btn-control" id="exit-save-btn">Выйти и сохранить</button>
+                <button class="btn-control music-toggle">Музыка: вкл</button>
                 <div class="music-control">
                     <label for="volume-slider">Громкость</label>
-                    <input type="range" id="volume-slider" min="0" max="100" value="50">
+                    <input type="range" class="volume-slider" id="volume-slider" min="0" max="100" value="50">
                 </div>
+                <button class="btn-control" id="exit-save-btn">Выйти и сохранить</button>
             </div>
         </div>
     </div>
 
+    <!-- Настройки с главного меню (без кнопки отката) -->
     <div class="overlay" id="settings-overlay">
         <div class="modal">
-            <button id="close-settings">&times;</button>
+            <button class="close-cross" id="close-settings">&times;</button>
             <h2>Настройки</h2>
             <div class="controls">
                 <button class="btn-control" id="settings-theme-toggle">Сменить тему</button>
-                <button class="btn-control" id="settings-music-toggle">Музыка: вкл</button>
+                <button class="btn-control music-toggle">Музыка: вкл</button>
                 <div class="music-control">
                     <label for="settings-volume-slider">Громкость</label>
-                    <input type="range" id="settings-volume-slider" min="0" max="100" value="50">
+                    <input type="range" class="volume-slider" id="settings-volume-slider" min="0" max="100" value="50">
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Окно подтверждения новой игры -->
+    <div class="overlay" id="confirm-overlay">
+        <div class="modal">
+            <h2>Подтверждение</h2>
+            <p class="confirm-text">Вы уверены, что хотите начать игру заново? Весь прогресс будет полностью сброшен!</p>
+            <div class="controls">
+                <button class="btn-control" id="confirm-yes">Да, уверен</button>
+                <button class="btn-control" id="confirm-no">Нет, вернуться</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Окно «Об игре» -->
     <div class="overlay" id="intro-overlay">
         <div class="modal">
             <h2>Об игре</h2>
@@ -379,6 +400,9 @@
     </audio>
 
     <script>
+        const SAVE_KEY = 'jr_save';
+        const SETTINGS_KEY = 'jr_settings';
+
         // --- Общий текст для обеих веток первого выбора ---
         const commonText = [
             "Совершенно новое пространство. Далеко не такое пустое как предыдущее. Неизменно одно – в руках стеклянный маленький короб с таинственным куском бумаги.",
@@ -457,6 +481,34 @@
             }
         ];
 
+        // --- DOM-элементы ---
+        const container = document.getElementById('game-container');
+        const mainMenu = document.getElementById('main-menu');
+        const topbar = document.getElementById('topbar');
+        const titleBlock = document.getElementById('title-block');
+
+        const startGameBtn = document.getElementById('start-game-btn');
+        const continueBtn = document.getElementById('continue-btn');
+        const settingsBtn = document.getElementById('settings-btn');
+        const aboutBtn = document.getElementById('about-btn');
+
+        const overlay = document.getElementById('overlay');
+        const menuBtn = document.getElementById('menu-btn');
+        const closeMenuBtn = document.getElementById('close-menu');
+
+        const settingsOverlay = document.getElementById('settings-overlay');
+        const closeSettingsBtn = document.getElementById('close-settings');
+
+        const introOverlay = document.getElementById('intro-overlay');
+        const introCloseBtn = document.getElementById('intro-close');
+
+        const confirmOverlay = document.getElementById('confirm-overlay');
+        const confirmYesBtn = document.getElementById('confirm-yes');
+        const confirmNoBtn = document.getElementById('confirm-no');
+
+        const rollbackBtn = document.getElementById('rollback-btn');
+        const exitSaveBtn = document.getElementById('exit-save-btn');
+
         // --- Состояние игры ---
         let currentIndex = 0;
         let isTyping = false;
@@ -465,15 +517,17 @@
         let pendingResult = null;
         let currentTypingText = '';
         let isChoiceVisible = false;
-        const container = document.getElementById('game-container');
-
-        // --- Точка отката ---
         let rollbackCheckpoint = null;
-        const rollbackBtn = document.getElementById('rollback-btn');
 
-        // --- Тема ---
-        const themeKey = 'jr_theme';
-        let isDark = localStorage.getItem(themeKey) === 'dark';
+        // --- Звук и настройки ---
+        const bgMusic = document.getElementById('bg-music');
+        const clickSound = document.getElementById('click-sound');
+        const musicToggles = document.querySelectorAll('.music-toggle');
+        const volumeSliders = document.querySelectorAll('.volume-slider');
+
+        let musicPlaying = true;
+        let volumeLevel = 0.5;
+        let isDark = false;
 
         function applyTheme() {
             const root = document.documentElement;
@@ -492,84 +546,68 @@
             }
         }
 
-        applyTheme();
-
-        function toggleTheme() {
-            isDark = !isDark;
-            localStorage.setItem(themeKey, isDark ? 'dark' : 'light');
-            applyTheme();
-        }
-
-        // --- Звук ---
-        const bgMusic = document.getElementById('bg-music');
-        const clickSound = document.getElementById('click-sound');
-        const musicToggle = document.getElementById('music-toggle');
-        const settingsMusicToggle = document.getElementById('settings-music-toggle');
-        const volumeSlider = document.getElementById('volume-slider');
-        const settingsVolumeSlider = document.getElementById('settings-volume-slider');
-        const audioKey = 'jr_audio';
-        let musicPlaying = true;
-
-        function applyAudioSettings() {
-            let vol = 50, music = true;
+        function persistSettings() {
             try {
-                const raw = localStorage.getItem(audioKey);
-                if (raw) {
-                    const s = JSON.parse(raw);
-                    vol = (typeof s.volume === 'number') ? s.volume : 50;
-                    music = (typeof s.music === 'boolean') ? s.music : true;
-                }
-            } catch (e) { /* игнорируем поврежденные данные */ }
-            bgMusic.volume = vol / 100;
-            clickSound.volume = vol / 100;
-            volumeSlider.value = vol;
-            settingsVolumeSlider.value = vol;
-            musicPlaying = music;
-            const label = music ? 'Музыка: вкл' : 'Музыка: выкл';
-            musicToggle.textContent = label;
-            settingsMusicToggle.textContent = label;
-        }
-
-        function persistAudioSettings() {
-            localStorage.setItem(audioKey, JSON.stringify({
-                volume: Math.round(bgMusic.volume * 100),
-                music: musicPlaying
-            }));
+                localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+                    isDark: isDark,
+                    volume: volumeLevel,
+                    music: musicPlaying
+                }));
+            } catch (e) {}
         }
 
         function setVolume(vol) {
+            volumeLevel = vol;
             bgMusic.volume = vol;
             clickSound.volume = vol;
-            const pct = Math.round(vol * 100);
-            volumeSlider.value = pct;
-            settingsVolumeSlider.value = pct;
-            persistAudioSettings();
+            volumeSliders.forEach(s => { s.value = Math.round(vol * 100); });
+            persistSettings();
         }
 
-        function setMusicEnabled(on) {
-            musicPlaying = on;
-            const label = on ? 'Музыка: вкл' : 'Музыка: выкл';
-            musicToggle.textContent = label;
-            settingsMusicToggle.textContent = label;
-            if (on) {
-                bgMusic.play().catch(function () {});
+        function setMusicEnabled(enabled) {
+            musicPlaying = enabled;
+            if (enabled) {
+                bgMusic.play().catch(() => {});
             } else {
                 bgMusic.pause();
             }
-            persistAudioSettings();
+            musicToggles.forEach(t => {
+                t.textContent = enabled ? 'Музыка: вкл' : 'Музыка: выкл';
+            });
+            persistSettings();
         }
 
-        applyAudioSettings();
-
-        bgMusic.play().catch(() => {
-            const startMusicOnce = () => {
-                if (musicPlaying) {
-                    bgMusic.play().catch(() => {});
+        function loadSettings() {
+            try {
+                const s = JSON.parse(localStorage.getItem(SETTINGS_KEY));
+                if (s) {
+                    isDark = !!s.isDark;
+                    volumeLevel = (typeof s.volume === 'number') ? s.volume : 0.5;
+                    musicPlaying = (s.music !== false);
                 }
-                document.body.removeEventListener('click', startMusicOnce);
-            };
-            document.body.addEventListener('click', startMusicOnce);
-        });
+            } catch (e) {}
+            applyTheme();
+            bgMusic.volume = volumeLevel;
+            clickSound.volume = volumeLevel;
+            volumeSliders.forEach(s => { s.value = Math.round(volumeLevel * 100); });
+            musicToggles.forEach(t => {
+                t.textContent = musicPlaying ? 'Музыка: вкл' : 'Музыка: выкл';
+            });
+        }
+
+        loadSettings();
+
+        if (musicPlaying) {
+            bgMusic.play().catch(() => {
+                const startMusicOnce = () => {
+                    if (musicPlaying) {
+                        bgMusic.play().catch(() => {});
+                    }
+                    document.body.removeEventListener('click', startMusicOnce);
+                };
+                document.body.addEventListener('click', startMusicOnce);
+            });
+        }
 
         function playClick() {
             if (!musicPlaying) return;
@@ -577,15 +615,22 @@
             clickSound.play().catch(() => {});
         }
 
-        // --- Окна ---
-        const overlay = document.getElementById('overlay');
-        const settingsOverlay = document.getElementById('settings-overlay');
-        const introOverlay = document.getElementById('intro-overlay');
-        const menuBtn = document.getElementById('menu-btn');
-        const closeMenuBtn = document.getElementById('close-menu');
-        const closeSettingsBtn = document.getElementById('close-settings');
-        const introCloseBtn = document.getElementById('intro-close');
+        musicToggles.forEach(t => {
+            t.addEventListener('click', (e) => {
+                e.stopPropagation();
+                playClick();
+                setMusicEnabled(!musicPlaying);
+            });
+        });
 
+        volumeSliders.forEach(s => {
+            s.addEventListener('input', (e) => {
+                e.stopPropagation();
+                setVolume(s.value / 100);
+            });
+        });
+
+        // --- Открытие/закрытие окон ---
         menuBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             playClick();
@@ -602,15 +647,6 @@
                 overlay.classList.remove('active');
             }
         });
-
-        // --- Элементы главного меню ---
-        const mainMenu = document.getElementById('main-menu');
-        const startGameBtn = document.getElementById('start-game-btn');
-        const continueGameBtn = document.getElementById('continue-game-btn');
-        const settingsBtn = document.getElementById('settings-btn');
-        const aboutBtn = document.getElementById('about-btn');
-        const topbar = document.getElementById('topbar');
-        const titleBlock = document.getElementById('title-block');
 
         settingsBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -647,92 +683,64 @@
             }
         });
 
-        document.querySelectorAll('.modal').forEach((m) => {
+        document.querySelectorAll('.modal').forEach(m => {
             m.addEventListener('click', (e) => {
                 e.stopPropagation();
             });
         });
 
-        // --- Переключатели темы, музыки и громкости ---
-        const themeToggle = document.getElementById('theme-toggle');
-        const settingsThemeToggle = document.getElementById('settings-theme-toggle');
-
-        themeToggle.addEventListener('click', (e) => {
-            e.stopPropagation();
-            playClick();
-            toggleTheme();
+        // Тема (синхронно из обоих окон)
+        const themeToggles = document.querySelectorAll('#theme-toggle, #settings-theme-toggle');
+        themeToggles.forEach(t => {
+            t.addEventListener('click', (e) => {
+                e.stopPropagation();
+                playClick();
+                isDark = !isDark;
+                applyTheme();
+                persistSettings();
+            });
         });
 
-        settingsThemeToggle.addEventListener('click', (e) => {
-            e.stopPropagation();
-            playClick();
-            toggleTheme();
-        });
-
-        musicToggle.addEventListener('click', (e) => {
-            e.stopPropagation();
-            playClick();
-            setMusicEnabled(!musicPlaying);
-        });
-
-        settingsMusicToggle.addEventListener('click', (e) => {
-            e.stopPropagation();
-            playClick();
-            setMusicEnabled(!musicPlaying);
-        });
-
-        volumeSlider.addEventListener('input', (e) => {
-            e.stopPropagation();
-            setVolume(e.target.value / 100);
-        });
-
-        settingsVolumeSlider.addEventListener('input', (e) => {
-            e.stopPropagation();
-            setVolume(e.target.value / 100);
-        });
-
-        // --- Система сохранения прогресса ---
-        const SAVE_KEY = 'jr_save';
-        const exitSaveBtn = document.getElementById('exit-save-btn');
-
+        // --- Сохранение и загрузка прогресса ---
         function hasSave() {
             return localStorage.getItem(SAVE_KEY) !== null;
         }
 
-        function updateContinueBtn() {
-            continueGameBtn.disabled = !hasSave();
-        }
-
-        function collectVisibleTexts() {
-            const texts = [];
-            const children = Array.prototype.slice.call(container.children);
-            for (let i = 0; i < children.length; i++) {
-                const el = children[i];
-                if (el.classList.contains('choice-block')) break;
-                if (el.classList.contains('paragraph')) {
-                    if (isTyping && i === children.length - 1) {
-                        texts.push(currentTypingText);
-                    } else {
-                        texts.push(el.textContent);
-                    }
-                }
-            }
-            return texts;
-        }
-
         function saveGame() {
-            const data = {
-                texts: collectVisibleTexts(),
-                choiceVisible: isChoiceVisible,
-                currentIndex: currentIndex,
-                pendingResult: pendingResult ? pendingResult.slice() : null,
-                rollbackCheckpoint: rollbackCheckpoint,
-                // Флаг использования отката: true = откат к текущей точке уже потрачен
-                rollbackUsed: rollbackBtn.disabled,
-                savedAt: Date.now()
-            };
-            localStorage.setItem(SAVE_KEY, JSON.stringify(data));
-            updateContinueBtn();
+            try {
+                if (isChoiceVisible && rollbackCheckpoint) {
+                    // Сохраняемся на развилке: без блока выбора, только абзацы до него
+                    const ps = Array.from(container.children)
+                        .slice(0, rollbackCheckpoint.containerChildCount)
+                        .map(el => el.textContent);
+                    localStorage.setItem(SAVE_KEY, JSON.stringify({
+                        mode: 'choice',
+                        paragraphsShown: ps,
+                        choiceIndex: rollbackCheckpoint.choiceIndex,
+                        rollbackUsed: rollbackBtn.disabled
+                    }));
+                } else {
+                    const ps = Array.from(container.children).map((el, i) => {
+                        if (isTyping && el === container.lastElementChild) {
+                            return currentTypingText; // недопечатанный абзац сохраняем целиком
+                        }
+                        return el.textContent;
+                    });
+                    localStorage.setItem(SAVE_KEY, JSON.stringify({
+                        mode: 'text',
+                        paragraphsShown: ps,
+                        currentIndex: currentIndex,
+                        pendingResult: pendingResult ? pendingResult.slice() : [],
+                        rollbackCheckpoint: rollbackCheckpoint ? {
+                            choiceIndex: rollbackCheckpoint.choiceIndex,
+                            containerChildCount: rollbackCheckpoint.containerChildCount
+                        } : null,
+                        rollbackUsed: rollbackBtn.disabled
+                    }));
+                }
+            } catch (e) {
+                console.log('Не удалось сохранить прогресс:', e);
+            }
         }
 
         function resetStoryState() {
@@ -745,99 +753,125 @@
             pendingResult = null;
             choiceMade = false;
             isChoiceVisible = false;
+            currentTypingText = '';
             rollbackCheckpoint = null;
             rollbackBtn.disabled = true;
         }
 
-        function restoreGame() {
-            const raw = localStorage.getItem(SAVE_KEY);
-            if (!raw) return;
-            let data;
+        function loadGame() {
+            let s;
             try {
-                data = JSON.parse(raw);
+                const raw = localStorage.getItem(SAVE_KEY);
+                if (!raw) return false;
+                s = JSON.parse(raw);
             } catch (e) {
-                return;
+                return false;
             }
+            if (!s || !Array.isArray(s.paragraphsShown)) return false;
 
             resetStoryState();
 
-            // Восстанавливаем тексты разом, без анимации печати
-            data.texts.forEach((t) => {
+            s.paragraphsShown.forEach(text => {
                 const p = document.createElement('div');
                 p.className = 'paragraph';
-                p.textContent = t;
+                p.textContent = text;
                 container.appendChild(p);
             });
 
-            // Восстанавливаем точку отката и ФЛАГ использования отката
-            if (data.rollbackCheckpoint) {
-                rollbackCheckpoint = data.rollbackCheckpoint;
-                rollbackBtn.disabled = !!data.rollbackUsed;
+            if (s.mode === 'choice') {
+                // Восстанавливаем состояние «игрок стоит перед выбором»
+                currentIndex = s.choiceIndex;
+                const choiceObj = paragraphs[currentIndex];
+                showChoice(choiceObj, !s.rollbackUsed);
+                currentIndex++;
             } else {
-                rollbackBtn.disabled = true;
-            }
-
-            if (data.choiceVisible) {
-                // На момент выхода была открыта развилка — показываем её заново
-                const choiceObj = paragraphs[data.currentIndex - 1];
-                if (choiceObj && choiceObj.type === 'choice') {
-                    currentIndex = data.currentIndex - 1;
-                    showChoice(choiceObj, false);
-                    currentIndex = data.currentIndex;
-                } else {
-                    currentIndex = data.currentIndex;
+                currentIndex = s.currentIndex || 0;
+                pendingResult = Array.isArray(s.pendingResult) ? s.pendingResult.slice() : [];
+                if (s.rollbackCheckpoint) {
+                    rollbackCheckpoint = {
+                        choiceIndex: s.rollbackCheckpoint.choiceIndex,
+                        containerChildCount: s.rollbackCheckpoint.containerChildCount
+                    };
+                    rollbackBtn.disabled = !!s.rollbackUsed;
                 }
-            } else {
-                currentIndex = data.currentIndex;
-                pendingResult = data.pendingResult ? data.pendingResult.slice() : null;
             }
-
-            window.scrollTo(0, document.body.scrollHeight);
+            return true;
         }
 
-        // --- Выход в главное меню с сохранением ---
-        function exitToMenu() {
-            saveGame();
-            if (isTyping) {
-                clearInterval(typingInterval);
-                isTyping = false;
-            }
+        // --- Навигация между экранами ---
+        function enterGameScreen() {
+            mainMenu.classList.add('hidden');
+            topbar.classList.remove('hidden');
+            titleBlock.classList.remove('hidden');
+        }
+
+        function returnToMainMenu() {
             overlay.classList.remove('active');
             mainMenu.classList.remove('hidden');
             topbar.classList.add('hidden');
             titleBlock.classList.add('hidden');
+            continueBtn.disabled = !hasSave();
         }
 
-        exitSaveBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            playClick();
-            exitToMenu();
-        });
+        function startNewGame() {
+            resetStoryState();
+            localStorage.removeItem(SAVE_KEY);
+            continueBtn.disabled = true;
+            enterGameScreen();
+        }
 
-        // --- Кнопки главного меню ---
+        // --- Окно подтверждения новой игры ---
         startGameBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             playClick();
-            resetStoryState();
-            // Новая игра стирает старое сохранение
-            localStorage.removeItem(SAVE_KEY);
-            updateContinueBtn();
-            mainMenu.classList.add('hidden');
-            topbar.classList.remove('hidden');
-            titleBlock.classList.remove('hidden');
+            if (hasSave()) {
+                // Прогресс есть — предупреждаем о сбросе
+                confirmOverlay.classList.add('active');
+            } else {
+                // Первый запуск — стартуем без вопросов
+                startNewGame();
+            }
         });
 
-        continueGameBtn.addEventListener('click', (e) => {
+        confirmYesBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             playClick();
-            if (!hasSave()) return;
-            restoreGame();
-            mainMenu.classList.add('hidden');
-            topbar.classList.remove('hidden');
-            titleBlock.classList.remove('hidden');
+            confirmOverlay.classList.remove('active');
+            startNewGame();
         });
 
-        updateContinueBtn();
+        confirmNoBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            playClick();
+            confirmOverlay.classList.remove('active');
+        });
+
+        confirmOverlay.addEventListener('click', (e) => {
+            if (e.target === confirmOverlay) {
+                // Клик мимо окна = «Нет, вернуться»
+                confirmOverlay.classList.remove('active');
+            }
+        });
+
+        // --- Продолжить игру ---
+        continueBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            playClick();
+            if (loadGame()) {
+                enterGameScreen();
+            } else {
+                // Сохранение повреждено — начинаем заново
+                startNewGame();
+            }
+        });
+
+        // --- Выйти и сохранить ---
+        exitSaveBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            playClick();
+            saveGame();
+            returnToMainMenu();
+        });
 
         // --- Откат к выбору ---
         rollbackBtn.addEventListener('click', (e) => {
@@ -909,8 +943,8 @@
             typeParagraph(text);
         }
 
-        // --- Показ развилки ---
         function showChoice(choiceObj, enableRollback) {
+            // Сбрасываем флаг выбора — фикс бага с неработающими кнопками второго выбора
             choiceMade = false;
 
             rollbackCheckpoint = {
@@ -948,9 +982,7 @@
         // --- Продвижение сюжета по клику ---
         document.body.addEventListener('click', () => {
             if (!mainMenu.classList.contains('hidden')) return;
-            if (overlay.classList.contains('active')) return;
-            if (settingsOverlay.classList.contains('active')) return;
-            if (introOverlay.classList.contains('active')) return;
+            if (document.querySelector('.overlay.active')) return;
             if (isChoiceVisible) return;
             if (isTyping) {
                 skipTyping();
@@ -972,6 +1004,9 @@
                 }
             }
         });
+
+        // --- Инициализация ---
+        continueBtn.disabled = !hasSave();
     </script>
 </body>
 </html>
