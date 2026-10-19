@@ -832,6 +832,11 @@
                     rollbackBtn.disabled = !!s.rollbackUsed;
                 }
             }
+
+            // Прокручиваем к последнему восстановленному абзацу
+            if (container.lastElementChild) {
+                container.lastElementChild.scrollIntoView({ block: 'end' });
+            }
             return true;
         }
 
@@ -951,6 +956,9 @@
 
             currentIndex++;
 
+            // Автосохранение сразу после отката
+            saveGame();
+
             overlay.classList.remove('active');
         });
 
@@ -975,6 +983,8 @@
                     clearInterval(typingInterval);
                     cursor.remove();
                     isTyping = false;
+                    // Автосохранение: абзац допечатан полностью
+                    saveGame();
                 }
             }, speed);
         }
@@ -986,6 +996,8 @@
                 lastP.textContent = currentTypingText;
             }
             isTyping = false;
+            // Автосохранение: печать пропущена, абзац показан целиком
+            saveGame();
         }
 
         function typeParagraphTracked(text) {
@@ -1019,6 +1031,8 @@
                     playClick();
                     choiceBlock.remove();
                     pendingResult = option.result.slice();
+                    // Автосохранение: выбор сделан, состояние до начала печати результата
+                    saveGame();
                     if (pendingResult.length > 0) {
                         const firstText = pendingResult.shift();
                         typeParagraphTracked(firstText);
@@ -1027,6 +1041,9 @@
                 choiceBlock.appendChild(btn);
             });
             container.appendChild(choiceBlock);
+
+            // Автосохранение: развилка появилась на экране
+            saveGame();
         }
 
         // --- Продвижение сюжета (общая логика для клика и пробела) ---
