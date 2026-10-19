@@ -309,6 +309,33 @@
         @keyframes blink {
             50% { opacity: 0; }
         }
+
+        /* --- Подсказка по управлению --- */
+        #hint-box {
+            position: fixed;
+            top: 170px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            padding: 16px 28px;
+            font-family: 'DOSFont', monospace;
+            font-size: 14px;
+            color: var(--text-color);
+            text-align: left;
+            line-height: 1.8;
+            z-index: 150;
+            pointer-events: none;
+            transition: background-color 0.3s, border-color 0.3s, color 0.3s, opacity 0.3s;
+        }
+
+        #hint-box.hidden {
+            display: none;
+        }
+
+        #hint-box .hint-line {
+            white-space: nowrap;
+        }
     </style>
 </head>
 <body>
@@ -382,6 +409,13 @@
             </p>
             <button class="btn-control" id="intro-close">Понятно</button>
         </div>
+    </div>
+
+    <!-- Подсказка по управлению -->
+    <div id="hint-box" class="hidden">
+        <div class="hint-line">"Клик/Пробел" - для показа текста</div>
+        <div class="hint-line">Повторный "Клик/Пробел" - пропуск анимации показа текста</div>
+        <div class="hint-line">"Esc" - открытие окна меню</div>
     </div>
 
     <div id="title-block" class="hidden">
@@ -506,6 +540,8 @@
         const confirmYesBtn = document.getElementById('confirm-yes');
         const confirmNoBtn = document.getElementById('confirm-no');
 
+        const hintBox = document.getElementById('hint-box');
+
         const rollbackBtn = document.getElementById('rollback-btn');
         const exitSaveBtn = document.getElementById('exit-save-btn');
 
@@ -518,6 +554,7 @@
         let currentTypingText = '';
         let isChoiceVisible = false;
         let rollbackCheckpoint = null;
+        let hintVisible = false;
 
         // --- Звук и настройки ---
         const bgMusic = document.getElementById('bg-music');
@@ -807,6 +844,7 @@
 
         function returnToMainMenu() {
             overlay.classList.remove('active');
+            hideHint();
             mainMenu.classList.remove('hidden');
             topbar.classList.add('hidden');
             titleBlock.classList.add('hidden');
@@ -818,6 +856,18 @@
             localStorage.removeItem(SAVE_KEY);
             continueBtn.disabled = true;
             enterGameScreen();
+            showHint();
+        }
+
+        // --- Подсказка по управлению ---
+        function showHint() {
+            hintVisible = true;
+            hintBox.classList.remove('hidden');
+        }
+
+        function hideHint() {
+            hintVisible = false;
+            hintBox.classList.add('hidden');
         }
 
         // --- Окно подтверждения новой игры ---
@@ -979,10 +1029,19 @@
             container.appendChild(choiceBlock);
         }
 
-        // --- Продвижение сюжета по клику ---
-        document.body.addEventListener('click', () => {
-            if (!mainMenu.classList.contains('hidden')) return;
-            if (document.querySelector('.overlay.active')) return;
+        // --- Продвижение сюжета (общая логика для клика и пробела) ---
+        function isGameActive() {
+            // Клавиши активны только на экране сюжета: главное меню скрыто и не открыто ни одно окно
+            if (!mainMenu.classList.contains('hidden')) return false;
+            if (document.querySelector('.overlay.active')) return false;
+            return true;
+        }
+
+        function advanceStory() {
+            if (hintVisible) {
+                hideHint();
+                // Не «съедаем» действие: подсказка закрывается, и текст сразу начинает печататься
+            }
             if (isChoiceVisible) return;
             if (isTyping) {
                 skipTyping();
@@ -1002,6 +1061,41 @@
                     showChoice(item, true);
                     currentIndex++;
                 }
+            }
+        }
+
+        document.body.addEventListener('click', () => {
+            if (!isGameActive()) return;
+            advanceStory();
+        });
+
+        // --- Управление с клавиатуры ---
+        document.addEventListener('keydown', (e) => {
+            const isInputFocused = document.activeElement &&
+                (document.activeElement.tagName === 'INPUT' ||
+                 document.activeElement.tagName === 'TEXTAREA');
+
+            if (e.key === 'Escape') {
+                // Esc работает только на игровом экране без открытых окон,
+                // либо закрывает уже открытое окно «Меню»
+                if (isInputFocused) return;
+                if (!overlay.classList.contains('active')) {
+                    if (!isGameActive()) return;
+                    if (hintVisible) {
+                        hideHint();
+                    }
+                    overlay.classList.add('active');
+                } else {
+                    overlay.classList.remove('active');
+                }
+                return;
+            }
+
+            if (e.key === ' ' || e.code === 'Space') {
+                if (isInputFocused) return;
+                if (!isGameActive()) return;
+                e.preventDefault();
+                advanceStory();
             }
         });
 
