@@ -15,6 +15,8 @@
             --border-color: #000;
             --topbar-bg: rgba(255, 255, 255, 0.8);
             --topbar-border: rgba(0, 0, 0, 0.3);
+            /* Затемняющий слой поверх видео фона главного меню */
+            --menu-dim: rgba(255, 255, 255, 0.55);
         }
 
         * {
@@ -206,7 +208,8 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: var(--bg-color);
+            /* Фон прозрачный — сквозь него видно фоновое видео */
+            background: transparent;
             z-index: 400;
             display: flex;
             flex-direction: column;
@@ -220,16 +223,46 @@
             display: none;
         }
 
+        /* --- Фоновое видео главного меню --- */
+        #menu-bg-video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -2;
+            pointer-events: none;
+            filter: grayscale(100%);
+        }
+
+        /* Затемняющий слой для читаемости текста меню */
+        #menu-bg-dim {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--menu-dim);
+            z-index: -1;
+            pointer-events: none;
+            transition: background 0.3s;
+        }
+
         #menu-title {
             font-size: 36px;
             font-weight: bold;
             letter-spacing: 4px;
             color: var(--text-color);
             text-align: center;
+            position: relative;
+            z-index: 1;
         }
 
         #main-menu .controls {
             width: 260px;
+            position: relative;
+            z-index: 1;
         }
 
         #main-menu .btn-control {
@@ -341,6 +374,13 @@
 <body>
     <!-- Главное меню -->
     <div id="main-menu">
+        <!-- Фоновое видео (замени src на свой файл) -->
+        <video id="menu-bg-video" autoplay muted loop playsinline>
+            <source src="menu-bg.mp4" type="video/mp4">
+        </video>
+        <!-- Затемняющий слой поверх видео -->
+        <div id="menu-bg-dim"></div>
+
         <div id="menu-title">JUST REMEMBER</div>
         <div class="controls">
             <button class="btn-control" id="start-game-btn">Новая игра</button>
@@ -416,7 +456,6 @@
         <div class="hint-line">"Клик/Пробел" - для показа текста</div>
         <div class="hint-line">Повторный "Клик/Пробел" - пропуск анимации показа текста</div>
         <div class="hint-line">"M" - открытие окна меню</div>
-        <div class="hint-line">В игре присутствует автосохранение. При закрытии вкладки прогресс будет сохранен автоматически.</div>
     </div>
 
     <div id="title-block" class="hidden">
@@ -546,6 +585,9 @@
         const rollbackBtn = document.getElementById('rollback-btn');
         const exitSaveBtn = document.getElementById('exit-save-btn');
 
+        // Фоновое видео главного меню
+        const menuBgVideo = document.getElementById('menu-bg-video');
+
         // --- Состояние игры ---
         let currentIndex = 0;
         let isTyping = false;
@@ -575,12 +617,16 @@
                 root.style.setProperty('--border-color', '#fff');
                 root.style.setProperty('--topbar-bg', 'rgba(0, 0, 0, 0.7)');
                 root.style.setProperty('--topbar-border', 'rgba(255, 255, 255, 0.3)');
+                // В тёмной теме затемняем видео тёмным слоем
+                root.style.setProperty('--menu-dim', 'rgba(0, 0, 0, 0.55)');
             } else {
                 root.style.setProperty('--bg-color', '#fff');
                 root.style.setProperty('--text-color', '#000');
                 root.style.setProperty('--border-color', '#000');
                 root.style.setProperty('--topbar-bg', 'rgba(255, 255, 255, 0.8)');
                 root.style.setProperty('--topbar-border', 'rgba(0, 0, 0, 0.3)');
+                // В светлой теме осветляем видео белым слоем
+                root.style.setProperty('--menu-dim', 'rgba(255, 255, 255, 0.55)');
             }
         }
 
@@ -844,6 +890,8 @@
         // --- Навигация между экранами ---
         function enterGameScreen() {
             mainMenu.classList.add('hidden');
+            // Видео фона на игровом экране не нужно — останавливаем, чтобы не тратить ресурсы
+            menuBgVideo.pause();
             topbar.classList.remove('hidden');
             titleBlock.classList.remove('hidden');
         }
@@ -852,6 +900,8 @@
             overlay.classList.remove('active');
             hideHint();
             mainMenu.classList.remove('hidden');
+            // Возвращаемся в меню — снова запускаем фоновое видео
+            menuBgVideo.play().catch(() => {});
             topbar.classList.add('hidden');
             titleBlock.classList.add('hidden');
             continueBtn.disabled = !hasSave();
