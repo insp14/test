@@ -377,6 +377,7 @@
         <!-- Фоновое видео (замени src на свой файл) -->
         <video id="menu-bg-video" autoplay muted loop playsinline>
             <source src="menu-bg.mp4" type="video/mp4">
+            <source src="menu-bg.webm" type="video/webm">
         </video>
         <!-- Затемняющий слой поверх видео -->
         <div id="menu-bg-dim"></div>
@@ -465,12 +466,19 @@
     </div>
     <div id="game-container"></div>
 
+    <!-- Эмбиент: играет только в главном меню -->
     <audio id="bg-music" loop preload="auto">
         <source src="ambient.mp3" type="audio/mpeg">
     </audio>
 
+    <!-- Звук кликов интерфейса -->
     <audio id="click-sound" preload="auto">
         <source src="click.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Звук печати текста (зацикленный, играет пока печатается абзац) -->
+    <audio id="type-sound" loop preload="auto">
+        <source src="type.mp3" type="audio/mpeg">
     </audio>
 
     <script>
@@ -602,6 +610,7 @@
         // --- Звук и настройки ---
         const bgMusic = document.getElementById('bg-music');
         const clickSound = document.getElementById('click-sound');
+        const typeSound = document.getElementById('type-sound');
         const musicToggles = document.querySelectorAll('.music-toggle');
         const volumeSliders = document.querySelectorAll('.volume-slider');
 
@@ -644,13 +653,20 @@
             volumeLevel = vol;
             bgMusic.volume = vol;
             clickSound.volume = vol;
+            // Звук печати всегда вдвое тише остальных звуков
+            typeSound.volume = vol * 0.5;
             volumeSliders.forEach(s => { s.value = Math.round(vol * 100); });
             persistSettings();
         }
 
+        function isMenuScreen() {
+            // Находимся ли мы на экране главного меню
+            return !mainMenu.classList.contains('hidden');
+        }
+
         function setMusicEnabled(enabled) {
             musicPlaying = enabled;
-            if (enabled) {
+            if (enabled && isMenuScreen()) {
                 bgMusic.play().catch(() => {});
             } else {
                 bgMusic.pause();
@@ -673,6 +689,7 @@
             applyTheme();
             bgMusic.volume = volumeLevel;
             clickSound.volume = volumeLevel;
+            typeSound.volume = volumeLevel * 0.5;
             volumeSliders.forEach(s => { s.value = Math.round(volumeLevel * 100); });
             musicToggles.forEach(t => {
                 t.textContent = musicPlaying ? 'Музыка: вкл' : 'Музыка: выкл';
@@ -681,10 +698,11 @@
 
         loadSettings();
 
+        // Эмбиент стартует в главном меню (с запасным запуском по первому клику из-за политики автозапуска)
         if (musicPlaying) {
             bgMusic.play().catch(() => {
                 const startMusicOnce = () => {
-                    if (musicPlaying) {
+                    if (musicPlaying && isMenuScreen()) {
                         bgMusic.play().catch(() => {});
                     }
                     document.body.removeEventListener('click', startMusicOnce);
@@ -694,7 +712,6 @@
         }
 
         function playClick() {
-            if (!musicPlaying) return;
             clickSound.currentTime = 0;
             clickSound.play().catch(() => {});
         }
@@ -832,6 +849,9 @@
                 clearInterval(typingInterval);
                 isTyping = false;
             }
+            // Останавливаем звук печати
+            typeSound.pause();
+            typeSound.currentTime = 0;
             container.innerHTML = '';
             currentIndex = 0;
             pendingResult = null;
@@ -892,6 +912,8 @@
             mainMenu.classList.add('hidden');
             // Видео фона на игровом экране не нужно — останавливаем, чтобы не тратить ресурсы
             menuBgVideo.pause();
+            // Эмбиент играет только в главном меню
+            bgMusic.pause();
             topbar.classList.remove('hidden');
             titleBlock.classList.remove('hidden');
         }
@@ -900,8 +922,11 @@
             overlay.classList.remove('active');
             hideHint();
             mainMenu.classList.remove('hidden');
-            // Возвращаемся в меню — снова запускаем фоновое видео
+            // Возвращаемся в меню — снова запускаем фоновое видео и эмбиент
             menuBgVideo.play().catch(() => {});
+            if (musicPlaying) {
+                bgMusic.play().catch(() => {});
+            }
             topbar.classList.add('hidden');
             titleBlock.classList.add('hidden');
             continueBtn.disabled = !hasSave();
@@ -990,6 +1015,9 @@
             if (isTyping) {
                 clearInterval(typingInterval);
                 isTyping = false;
+                // Останавливаем звук печати
+                typeSound.pause();
+                typeSound.currentTime = 0;
             }
 
             pendingResult = null;
@@ -1025,6 +1053,9 @@
             container.appendChild(p);
             let charIndex = 0;
             const speed = 30;
+            // Звук печати: зацикленный трек играет, пока печатается абзац
+            typeSound.currentTime = 0;
+            typeSound.play().catch(() => {});
             typingInterval = setInterval(() => {
                 if (charIndex < text.length) {
                     const char = document.createTextNode(text[charIndex]);
@@ -1034,6 +1065,9 @@
                     clearInterval(typingInterval);
                     cursor.remove();
                     isTyping = false;
+                    // Печать завершена — глушим звук
+                    typeSound.pause();
+                    typeSound.currentTime = 0;
                     // Автосохранение: абзац допечатан полностью
                     saveGame();
                 }
@@ -1047,6 +1081,9 @@
                 lastP.textContent = currentTypingText;
             }
             isTyping = false;
+            // Печать пропущена — глушим звук
+            typeSound.pause();
+            typeSound.currentTime = 0;
             // Автосохранение: печать пропущена, абзац показан целиком
             saveGame();
         }
