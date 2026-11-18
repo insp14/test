@@ -370,6 +370,73 @@
         #hint-box .hint-line {
             white-space: nowrap;
         }
+
+        /* --- Кнопка перехода в «День 1» --- */
+        .day1-btn-block {
+            margin-top: 24px;
+            opacity: 0;
+            animation: fadeIn 0.5s forwards;
+        }
+
+        .day1-btn {
+            display: block;
+            width: 100%;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 10px 24px;
+            font-family: 'DOSFont', monospace;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .day1-btn:hover {
+            background: var(--text-color);
+            color: var(--bg-color);
+        }
+
+        /* --- Экран головоломки --- */
+        #puzzle-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-color);
+            color: var(--text-color);
+            z-index: 250;
+            overflow-y: auto;
+            padding: 60px 40px;
+            padding-top: 80px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        #puzzle-screen.hidden {
+            display: none;
+        }
+
+        .puzzle-placeholder {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .puzzle-placeholder .puzzle-title {
+            font-size: 36px;
+            font-weight: bold;
+            letter-spacing: 4px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .puzzle-placeholder .puzzle-note {
+            text-align: justify;
+            margin-bottom: 40px;
+        }
+
+        .puzzle-hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -466,6 +533,9 @@
         <hr class="title-line">
     </div>
     <div id="game-container"></div>
+
+    <!-- Экран головоломки (дни) -->
+    <div id="puzzle-screen" class="hidden"></div>
 
     <!-- Эмбиент: играет только в главном меню -->
     <audio id="bg-music" loop preload="auto">
@@ -640,13 +710,6 @@
                             "Настенные часы располагались над входной дверью, во всю стену стояли огромные белые стеклянные шкафы, по центру находилась кровать, пара тумбочек возле кровати, а в одной из стен был небольшой проход в операционную, которая необходима в случае оказания скорой помощи и поддержки состояния пациента.",
                             "Дни пребывания в этом месте давались Вам тяжко: из развлечений были только книги, из знакомых людей, с кем потенциально Вы могли завести диалог, был только один – Ваш лечащий врач, который активно следил за Вашим состоянием. Бакхэм был постоянно занят, как и его помощница Энн, и посещать Вас они физически не могли.",
                             "С момента Вашей последней встречи на крыше с Дэниэлем Бакхэмом прошло порядка трех дней, и до момента выписки у Вас оставалось примерно столько же, если верить словам врача. Вам он постоянно говорил о слишком быстром восстановлении Вашего организма после произошедшего, однако, что именно с Вами произошло, Вам так никто и не сказал.",
-                            "День проходил довольно обычно, как и все предыдущие: утреннее пробуждение, гигиенические процедуры, прием таблеток, дополнительные обследования, обед, прогулка, ужин, сон.",
-                            "Но в этот день произошло кое-что необычное: поднявшись на этаж после очередной прогулки, мимо Вас прошла Энн и, не сказав ни слова, передала Вам какую-то… папку? В течение нескольких первых секунд Вы оторопело стояли посередине коридора.",
-                            "И снова полное непонимание происходящего: что это и для чего Вам это передали, не было ни малейшего понимания. Опять загадки и никакого прямого ответа. Вы обернулись, чтобы посмотреть на девушку, но в Вашем поле зрения ее уже не было – коридор был заполнен людьми.",
-                            "Вернувшись в свою палату, Вы решили детально изучить то, что непроизвольно попало к Вам в руки. Неизвестный объект, похожий на какую-то папку, оказался Вашим личным досье, по крайней мере так было написано мистером Бакхэмом на отдельном листочке, приложенном к папке.",
-                            "Открыв его, на развороте Вы увидели свое имя, дату, место рождения, фотографию в профиль и огромное количество различных документов с обследований, о которых Вы, естественно, не помнили.",
-                            "Прежде, чем ознакомиться с каждым из них, Ваше внимание пало на фотографию. Если по поводу подлинности написанного имени и всех остальных вводных данных Вы и могли сомневаться, так как просто их не помните, то свое лицо Вы как минимум видите каждый день в отражении зеркал, встречающихся по всей больнице и в уборной.",
-                            "Фотография, которая была прикреплена в досье, не соответствовала Вашей внешности. Точнее, соответствовала, но слишком отдаленно и по общим чертам лица."
                         ]
                     },
                     {
@@ -656,6 +719,9 @@
                         ]
                     }
                 ]
+            },
+            {
+                type: "day1button"
             }
         ];
 
@@ -664,6 +730,7 @@
         const mainMenu = document.getElementById('main-menu');
         const topbar = document.getElementById('topbar');
         const titleBlock = document.getElementById('title-block');
+        const puzzleScreen = document.getElementById('puzzle-screen');
 
         const startGameBtn = document.getElementById('start-game-btn');
         const continueBtn = document.getElementById('continue-btn');
@@ -702,6 +769,12 @@
         let isChoiceVisible = false;
         let rollbackCheckpoint = null;
         let hintVisible = false;
+        // Ярлык последнего сделанного выбора (для головоломки)
+        let lastChoiceLabel = null;
+        // Показана ли сейчас кнопка «День 1»
+        let day1BtnVisible = false;
+        // Находимся ли мы внутри дня головоломки
+        let inPuzzle = false;
 
         // --- Звук и настройки ---
         const bgMusic = document.getElementById('bg-music');
@@ -914,19 +987,24 @@
                         mode: 'choice',
                         paragraphsShown: ps,
                         choiceIndex: rollbackCheckpoint.choiceIndex,
+                        lastChoiceLabel: lastChoiceLabel,
                         rollbackUsed: rollbackBtn.disabled
                     }));
                 } else {
-                    const ps = Array.from(container.children).map((el, i) => {
-                        if (isTyping && el === container.lastElementChild) {
-                            return currentTypingText; // недопечатанный абзац сохраняем целиком
-                        }
-                        return el.textContent;
-                    });
+                    const ps = Array.from(container.children)
+                        .filter(el => el.id !== 'day1-btn-block')
+                        .map((el, i) => {
+                            if (isTyping && el === container.lastElementChild) {
+                                return currentTypingText; // недопечатанный абзац сохраняем целиком
+                            }
+                            return el.textContent;
+                        });
                     localStorage.setItem(SAVE_KEY, JSON.stringify({
                         mode: 'text',
                         paragraphsShown: ps,
                         currentIndex: currentIndex,
+                        lastChoiceLabel: lastChoiceLabel,
+                        day1BtnShown: day1BtnVisible,
                         pendingResult: pendingResult ? pendingResult.slice() : [],
                         rollbackCheckpoint: rollbackCheckpoint ? {
                             choiceIndex: rollbackCheckpoint.choiceIndex,
@@ -938,6 +1016,23 @@
             } catch (e) {
                 console.log('Не удалось сохранить прогресс:', e);
             }
+        }
+
+        // --- Состояние головоломки (дни) ---
+        const PUZZLE_STATE_KEY = 'jr_puzzle_state';
+
+        function readPuzzleState() {
+            try {
+                return JSON.parse(localStorage.getItem(PUZZLE_STATE_KEY)) || {};
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function writePuzzleState(state) {
+            try {
+                localStorage.setItem(PUZZLE_STATE_KEY, JSON.stringify(state));
+            } catch (e) {}
         }
 
         function resetStoryState() {
@@ -956,6 +1051,8 @@
             currentTypingText = '';
             rollbackCheckpoint = null;
             rollbackBtn.disabled = true;
+            lastChoiceLabel = null;
+            day1BtnVisible = false;
         }
 
         function loadGame() {
@@ -981,18 +1078,24 @@
             if (s.mode === 'choice') {
                 // Восстанавливаем состояние «игрок стоит перед выбором»
                 currentIndex = s.choiceIndex;
+                lastChoiceLabel = s.lastChoiceLabel || null;
                 const choiceObj = paragraphs[currentIndex];
                 showChoice(choiceObj, !s.rollbackUsed);
                 currentIndex++;
             } else {
                 currentIndex = s.currentIndex || 0;
                 pendingResult = Array.isArray(s.pendingResult) ? s.pendingResult.slice() : [];
+                lastChoiceLabel = s.lastChoiceLabel || null;
                 if (s.rollbackCheckpoint) {
                     rollbackCheckpoint = {
                         choiceIndex: s.rollbackCheckpoint.choiceIndex,
                         containerChildCount: s.rollbackCheckpoint.containerChildCount
                     };
                     rollbackBtn.disabled = !!s.rollbackUsed;
+                }
+                // Восстанавливаем кнопку «День 1», если она была на экране в момент сохранения
+                if (s.day1BtnShown) {
+                    showDay1Button(true);
                 }
             }
 
@@ -1124,6 +1227,9 @@
                 container.removeChild(container.lastChild);
             }
 
+            // Кнопка «День 1», если была на экране, ушла вместе с абзацами
+            day1BtnVisible = false;
+
             currentIndex = rollbackCheckpoint.choiceIndex;
 
             const choiceObj = paragraphs[currentIndex];
@@ -1212,6 +1318,8 @@
                     if (choiceMade) return;
                     choiceMade = true;
                     isChoiceVisible = false;
+                    // Запоминаем, какой выбор сделан — головоломка это читает
+                    lastChoiceLabel = option.label;
                     playClick();
                     choiceBlock.remove();
                     pendingResult = option.result.slice();
@@ -1230,8 +1338,101 @@
             saveGame();
         }
 
+        // --- Кнопка «День 1» ---
+        function showDay1Button(silent) {
+            if (day1BtnVisible) return;
+            day1BtnVisible = true;
+            const block = document.createElement('div');
+            block.className = 'day1-btn-block';
+            block.id = 'day1-btn-block';
+            const btn = document.createElement('button');
+            btn.className = 'day1-btn';
+            btn.textContent = 'День 1';
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                playClick();
+                enterPuzzleDay(1);
+            });
+            block.appendChild(btn);
+            container.appendChild(block);
+            if (!silent) {
+                // Автосохранение: кнопка появилась на экране
+                saveGame();
+            }
+        }
+
+        // --- Переходы в дни головоломки ---
+        function enterPuzzleDay(dayNumber) {
+            if (inPuzzle) return;
+
+            // Глушим печать, если она идёт
+            if (isTyping) {
+                clearInterval(typingInterval);
+                isTyping = false;
+                typeSound.pause();
+                typeSound.currentTime = 0;
+            }
+
+            // Фиксируем сюжетное состояние основного сейва
+            saveGame();
+
+            // Записываем ярлык последнего выбора — дни головоломки его читают
+            const st = readPuzzleState();
+            st.story = st.story || {};
+            st.story.lastChoice = lastChoiceLabel;
+            st.story.day1_agreed = (lastChoiceLabel === 'Согласиться');
+            writePuzzleState(st);
+
+            inPuzzle = true;
+            puzzleScreen.innerHTML = '';
+            container.classList.add('puzzle-hidden');
+            titleBlock.classList.add('hidden');
+            topbar.classList.add('hidden');
+            hideHint();
+            puzzleScreen.classList.remove('hidden');
+
+            // Дни регистрируются в window.JR_DAYS как объекты с методом render
+            // (день сам рисует свой контент и получает api для навигации)
+            const startDay = window.JR_DAYS && window.JR_DAYS[dayNumber];
+            const dayApi = { exitToStory: exitPuzzleDay, exitToMenu: exitPuzzleToMenu };
+            if (startDay && typeof startDay.render === 'function') {
+                startDay.render(puzzleScreen, dayApi);
+            } else if (typeof startDay === 'function') {
+                // Запасной вариант: день зарегистрирован функцией
+                startDay(puzzleScreen, dayApi);
+            } else {
+                puzzleScreen.innerHTML =
+                    '<div class="puzzle-placeholder"><div class="puzzle-title">ДЕНЬ ' + dayNumber + '</div>' +
+                    '<div class="puzzle-note">Файл day' + dayNumber + '.js не найден. Проверьте, что он лежит в одной папке с index.html.</div></div>';
+            }
+        }
+
+        function exitPuzzleDay() {
+            if (!inPuzzle) return;
+            inPuzzle = false;
+            puzzleScreen.classList.add('hidden');
+            puzzleScreen.innerHTML = '';
+            container.classList.remove('puzzle-hidden');
+            topbar.classList.remove('hidden');
+            titleBlock.classList.remove('hidden');
+        }
+
+        function exitPuzzleToMenu() {
+            if (!inPuzzle) return;
+            inPuzzle = false;
+            puzzleScreen.classList.add('hidden');
+            puzzleScreen.innerHTML = '';
+            returnToMainMenu();
+        }
+
+        // Дни головоломки пользуются этими функциями
+        window.JR_exitPuzzleDay = exitPuzzleDay;
+        window.JR_exitPuzzleToMenu = exitPuzzleToMenu;
+
         // --- Продвижение сюжета (общая логика для клика и пробела) ---
         function isGameActive() {
+            // Внутри дня головоломки клики/пробел сюжет не двигают
+            if (inPuzzle) return false;
             // Клавиши активны только на экране сюжета: главное меню скрыто и не открыто ни одно окно
             if (!mainMenu.classList.contains('hidden')) return false;
             if (document.querySelector('.overlay.active')) return false;
@@ -1261,6 +1462,13 @@
                 } else if (item.type === "choice") {
                     showChoice(item, true);
                     currentIndex++;
+                } else if (item.type === "day1button") {
+                    currentIndex++;
+                    // Кнопка появляется только после выбора «Согласиться» —
+                    // в ветке отказа заглушка пока без перехода
+                    if (lastChoiceLabel === "Согласиться") {
+                        showDay1Button();
+                    }
                 }
             }
         }
@@ -1279,6 +1487,7 @@
             if (e.code === 'KeyM') {
                 // Клавиша M переключает окно «Меню» (работает и в русской раскладке — «ь»)
                 if (isInputFocused) return;
+                if (inPuzzle) return;
                 if (!overlay.classList.contains('active')) {
                     if (!isGameActive()) return;
                     if (hintVisible) {
@@ -1302,5 +1511,7 @@
         // --- Инициализация ---
         continueBtn.disabled = !hasSave();
     </script>
+    <!-- Дни головоломки: подключаются после основного скрипта -->
+    <script src="day1.js"></script>
 </body>
 </html>
