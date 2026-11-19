@@ -633,7 +633,9 @@
                     },
                     {
                         label: "Не нажимать",
-                        result:  // Сюжетный текст будет добавлен позже
+                        result: [
+                            // Сюжетный текст будет добавлен позже
+                        ]
                     }
                 ]
             },
@@ -712,7 +714,9 @@
                     },
                     {
                         label: "Не соглашаться",
-                        result:  // Здесь позже будет добавлен текст для ветки отказа
+                        result: [
+                            // Здесь позже будет добавлен текст для ветки отказа
+                        ]
                     }
                 ]
             },
@@ -791,6 +795,7 @@
                 root.style.setProperty('--border-color', '#fff');
                 root.style.setProperty('--topbar-bg', 'rgba(0, 0, 0, 0.7)');
                 root.style.setProperty('--topbar-border', 'rgba(255, 255, 255, 0.3)');
+                // В тёмной теме затемняем видео тёмным слоем
                 root.style.setProperty('--menu-dim', 'rgba(0, 0, 0, 0.55)');
             } else {
                 root.style.setProperty('--bg-color', '#fff');
@@ -798,6 +803,7 @@
                 root.style.setProperty('--border-color', '#000');
                 root.style.setProperty('--topbar-bg', 'rgba(255, 255, 255, 0.8)');
                 root.style.setProperty('--topbar-border', 'rgba(0, 0, 0, 0.3)');
+                // В светлой теме осветляем видео белым слоем
                 root.style.setProperty('--menu-dim', 'rgba(255, 255, 255, 0.55)');
             }
         }
@@ -816,12 +822,14 @@
             volumeLevel = vol;
             bgMusic.volume = vol;
             clickSound.volume = vol;
+            // Звук печати всегда вдвое тише остальных звуков
             typeSound.volume = vol * 0.5;
             volumeSliders.forEach(s => { s.value = Math.round(vol * 100); });
             persistSettings();
         }
 
         function isMenuScreen() {
+            // Находимся ли мы на экране главного меню
             return !mainMenu.classList.contains('hidden');
         }
 
@@ -859,6 +867,7 @@
 
         loadSettings();
 
+        // Эмбиент стартует в главном меню (с запасным запуском по первому клику из-за политики автозапуска)
         if (musicPlaying) {
             bgMusic.play().catch(() => {
                 const startMusicOnce = () => {
@@ -903,49 +912,14 @@
             overlay.classList.remove('active');
         });
 
-        // Закрытие оверлеев по клику вне области
-        [overlay, settingsOverlay, confirmOverlay, introOverlay].forEach(o => {
-            o.addEventListener('click', (e) => {
-                if (e.target === o) {
-                    o.classList.remove('active');
-                }
-            });
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                overlay.classList.remove('active');
+            }
         });
 
-        // --- Логика кнопок меню ---
-        
-        // Кнопка "Новая игра"
-        startGameBtn.addEventListener('click', () => {
-            playClick();
-            // Сброс прогресса
-            localStorage.removeItem(SAVE_KEY);
-            currentIndex = 0;
-            isTyping = false;
-            choiceMade = false;
-            day1BtnVisible = false;
-            inPuzzle = false;
-            
-            // Переключаем экраны
-            mainMenu.classList.add('hidden');
-            topbar.classList.remove('hidden');
-            titleBlock.classList.remove('hidden');
-            hintBox.classList.remove('hidden');
-            
-            // Очищаем контейнер
-            container.innerHTML = '';
-            
-            // Запускаем рендер первого абзаца
-            renderParagraph();
-        });
-
-        // Кнопка "Продолжить" (заглушка, так как сохранения еще нет)
-        continueBtn.addEventListener('click', () => {
-            playClick();
-            alert("Функция продолжения пока не реализована (нет сохранений). Начните новую игру.");
-        });
-
-        // Кнопка "Настройки"
-        settingsBtn.addEventListener('click', () => {
+        settingsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
             playClick();
             settingsOverlay.classList.add('active');
         });
@@ -955,221 +929,588 @@
             settingsOverlay.classList.remove('active');
         });
 
-        // Кнопка "Об игре"
-        aboutBtn.addEventListener('click', () => {
+        settingsOverlay.addEventListener('click', (e) => {
+            if (e.target === settingsOverlay) {
+                settingsOverlay.classList.remove('active');
+            }
+        });
+
+        aboutBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
             playClick();
             introOverlay.classList.add('active');
         });
 
-        introCloseBtn.addEventListener('click', () => {
+        introCloseBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
             playClick();
             introOverlay.classList.remove('active');
         });
 
-        // Подтверждение новой игры
-        confirmYesBtn.addEventListener('click', () => {
-            playClick();
-            confirmOverlay.classList.remove('active');
-            // Здесь логика старта, если бы она была внутри подтверждения
-        });
-
-        confirmNoBtn.addEventListener('click', () => {
-            playClick();
-            confirmOverlay.classList.remove('active');
-        });
-
-        // Кнопка выхода с сохранением
-        exitSaveBtn.addEventListener('click', () => {
-            playClick();
-            // Сохраняем прогресс
-            const saveData = {
-                index: currentIndex,
-                isDark: isDark,
-                volume: volumeLevel
-            };
-            localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
-            
-            // Возвращаем в меню
-            mainMenu.classList.remove('hidden');
-            topbar.classList.add('hidden');
-            titleBlock.classList.add('hidden');
-            hintBox.classList.add('hidden');
-            overlay.classList.remove('active');
-            
-            // Останавливаем музыку игры (если есть) и включаем меню
-            bgMusic.play().catch(() => {});
-        });
-
-        // Кнопка отката
-        rollbackBtn.addEventListener('click', () => {
-            playClick();
-            if (rollbackCheckpoint !== null) {
-                currentIndex = rollbackCheckpoint;
-                container.innerHTML = '';
-                renderParagraph();
+        introOverlay.addEventListener('click', (e) => {
+            if (e.target === introOverlay) {
+                introOverlay.classList.remove('active');
             }
         });
 
-        // --- Основная логика игры ---
+        document.querySelectorAll('.modal').forEach(m => {
+            m.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+        });
 
-        // Функция отрисовки текста (печатная машинка)
-        function renderParagraph() {
-            const data = paragraphs[currentIndex];
-            
-            // Если это выбор
-            if (data && data.type === "choice") {
-                showChoice(data.options);
-                return;
-            }
-            
-            // Если это кнопка "День 1"
-            if (data && data.type === "day1button") {
-                showDay1Button();
-                return;
-            }
+        // Тема (синхронно из обоих окон)
+        const themeToggles = document.querySelectorAll('#theme-toggle, #settings-theme-toggle');
+        themeToggles.forEach(t => {
+            t.addEventListener('click', (e) => {
+                e.stopPropagation();
+                playClick();
+                isDark = !isDark;
+                applyTheme();
+                persistSettings();
+            });
+        });
 
-            // Если это обычный текст
-            if (typeof data === "string") {
-                const p = document.createElement('div');
-                p.className = 'paragraph';
-                p.textContent = ""; // Начинаем с пустого
-                container.appendChild(p);
-                
-                currentTypingText = data;
-                isTyping = true;
-                
-                // Сброс курсора и звука
-                clearInterval(typingInterval);
-                typeSound.currentTime = 0;
-                typeSound.play();
-                
-                let i = 0;
-                typingInterval = setInterval(() => {
-                    if (i < currentTypingText.length) {
-                        p.textContent += currentTypingText.charAt(i);
-                        i++;
-                    } else {
-                        stopTyping();
-                    }
-                }, 30); // Скорость печати
+        // --- Сохранение и загрузка прогресса ---
+        function hasSave() {
+            return localStorage.getItem(SAVE_KEY) !== null;
+        }
+
+        function saveGame() {
+            try {
+                if (isChoiceVisible && rollbackCheckpoint) {
+                    // Сохраняемся на развилке: без блока выбора, только абзацы до него
+                    const ps = Array.from(container.children)
+                        .slice(0, rollbackCheckpoint.containerChildCount)
+                        .map(el => el.textContent);
+                    localStorage.setItem(SAVE_KEY, JSON.stringify({
+                        mode: 'choice',
+                        paragraphsShown: ps,
+                        choiceIndex: rollbackCheckpoint.choiceIndex,
+                        lastChoiceLabel: lastChoiceLabel,
+                        rollbackUsed: rollbackBtn.disabled
+                    }));
+                } else {
+                    const ps = Array.from(container.children)
+                        .filter(el => el.id !== 'day1-btn-block')
+                        .map((el, i) => {
+                            if (isTyping && el === container.lastElementChild) {
+                                return currentTypingText; // недопечатанный абзац сохраняем целиком
+                            }
+                            return el.textContent;
+                        });
+                    localStorage.setItem(SAVE_KEY, JSON.stringify({
+                        mode: 'text',
+                        paragraphsShown: ps,
+                        currentIndex: currentIndex,
+                        lastChoiceLabel: lastChoiceLabel,
+                        day1BtnShown: day1BtnVisible,
+                        pendingResult: pendingResult ? pendingResult.slice() : [],
+                        rollbackCheckpoint: rollbackCheckpoint ? {
+                            choiceIndex: rollbackCheckpoint.choiceIndex,
+                            containerChildCount: rollbackCheckpoint.containerChildCount
+                        } : null,
+                        rollbackUsed: rollbackBtn.disabled
+                    }));
+                }
+            } catch (e) {
+                console.log('Не удалось сохранить прогресс:', e);
             }
         }
 
-        function stopTyping() {
-            isTyping = false;
-            clearInterval(typingInterval);
+        // --- Состояние головоломки (дни) ---
+        const PUZZLE_STATE_KEY = 'jr_puzzle_state';
+
+        function readPuzzleState() {
+            try {
+                return JSON.parse(localStorage.getItem(PUZZLE_STATE_KEY)) || {};
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function writePuzzleState(state) {
+            try {
+                localStorage.setItem(PUZZLE_STATE_KEY, JSON.stringify(state));
+            } catch (e) {}
+        }
+
+        function resetStoryState() {
+            if (isTyping) {
+                clearInterval(typingInterval);
+                isTyping = false;
+            }
+            // Останавливаем звук печати
             typeSound.pause();
             typeSound.currentTime = 0;
-            
-            // Показываем кнопку продолжения (клик/пробел)
-            showContinueButton();
+            container.innerHTML = '';
+            currentIndex = 0;
+            pendingResult = null;
+            choiceMade = false;
+            isChoiceVisible = false;
+            currentTypingText = '';
+            rollbackCheckpoint = null;
+            rollbackBtn.disabled = true;
+            lastChoiceLabel = null;
+            day1BtnVisible = false;
         }
 
-        function showContinueButton() {
-            const btn = document.createElement('button');
-            btn.className = 'choice-btn';
-            btn.textContent = "Далее (Клик / Пробел)";
-            btn.style.marginTop = "20px";
-            
-            const handler = () => {
-                playClick();
-                btn.remove();
-                document.removeEventListener('keydown', keyHandler);
-                
-                // Сохраняем точку отката перед переходом
-                rollbackCheckpoint = currentIndex;
-                
+        function loadGame() {
+            let s;
+            try {
+                const raw = localStorage.getItem(SAVE_KEY);
+                if (!raw) return false;
+                s = JSON.parse(raw);
+            } catch (e) {
+                return false;
+            }
+            if (!s || !Array.isArray(s.paragraphsShown)) return false;
+
+            resetStoryState();
+
+            s.paragraphsShown.forEach(text => {
+                const p = document.createElement('div');
+                p.className = 'paragraph';
+                p.textContent = text;
+                container.appendChild(p);
+            });
+
+            if (s.mode === 'choice') {
+                // Восстанавливаем состояние «игрок стоит перед выбором»
+                currentIndex = s.choiceIndex;
+                lastChoiceLabel = s.lastChoiceLabel || null;
+                const choiceObj = paragraphs[currentIndex];
+                showChoice(choiceObj, !s.rollbackUsed);
                 currentIndex++;
-                renderParagraph();
-            };
-            
-            const keyHandler = (e) => {
-                if (e.key === ' ' || e.key === 'Enter') {
-                    handler();
+            } else {
+                currentIndex = s.currentIndex || 0;
+                pendingResult = Array.isArray(s.pendingResult) ? s.pendingResult.slice() : [];
+                lastChoiceLabel = s.lastChoiceLabel || null;
+                if (s.rollbackCheckpoint) {
+                    rollbackCheckpoint = {
+                        choiceIndex: s.rollbackCheckpoint.choiceIndex,
+                        containerChildCount: s.rollbackCheckpoint.containerChildCount
+                    };
+                    rollbackBtn.disabled = !!s.rollbackUsed;
                 }
-            };
-            
-            btn.addEventListener('click', handler);
-            document.addEventListener('keydown', keyHandler);
-            
-            container.appendChild(btn);
-        }
-
-        function showChoice(options) {
-            const block = document.createElement('div');
-            block.className = 'choice-block';
-            
-            options.forEach(opt => {
-                const btn = document.createElement('button');
-                btn.className = 'choice-btn';
-                btn.textContent = opt.label;
-                
-                btn.addEventListener('click', () => {
-                    playClick();
-                    // Сохраняем результат выбора
-                    pendingResult = opt.result;
-                    choiceMade = true;
-                    block.remove();
-                    document.removeEventListener('keydown', keyHandler);
-                    
-                    // Переходим к следующему шагу, который обработает pendingResult
-                    currentIndex++;
-                    renderParagraph();
-                });
-                
-                block.appendChild(btn);
-            });
-            
-            const keyHandler = (e) => {
-                if (e.key === ' ' || e.key === 'Enter') {
-                    // Для простоты активируем первый выбор при пробеле
-                    block.children.click();
+                // Восстанавливаем кнопку «День 1», если она была на экране в момент сохранения
+                if (s.day1BtnShown) {
+                    showDay1Button(true);
                 }
-            };
-            
-            document.addEventListener('keydown', keyHandler);
-            container.appendChild(block);
+            }
+
+            // Прокручиваем к последнему восстановленному абзацу
+            if (container.lastElementChild) {
+                container.lastElementChild.scrollIntoView({ block: 'end' });
+            }
+            return true;
         }
 
-        function showDay1Button() {
-            const btn = document.createElement('button');
-            btn.className = 'day1-btn';
-            btn.textContent = "Перейти к Дню 1";
-            
-            btn.addEventListener('click', () => {
-                playClick();
-                // Логика перехода к головоломке/дню
-                inPuzzle = true;
-                day1BtnVisible = true;
-                
-                // Здесь должна быть логика загрузки экрана головоломки
-                // Для примера просто скроллим вверх и показываем заглушку
-                window.scrollTo(0, 0);
-                container.innerHTML = "<h2>Загрузка Дня 1...</h2><p>Здесь будет экран головоломки.</p>";
-                
-                // В реальном проекте здесь нужно скрыть game-container и показать puzzle-screen
-                // puzzleScreen.classList.remove('hidden');
-                // container.classList.add('hidden');
-            });
-            
-            container.appendChild(btn);
+        // --- Навигация между экранами ---
+        function enterGameScreen() {
+            mainMenu.classList.add('hidden');
+            // Видео фона на игровом экране не нужно — останавливаем, чтобы не тратить ресурсы
+            menuBgVideo.pause();
+            // Эмбиент играет только в главном меню
+            bgMusic.pause();
+            topbar.classList.remove('hidden');
+            titleBlock.classList.remove('hidden');
         }
 
-        // Обработка клика по экрану для пропуска текста (альтернатива кнопке)
-        document.addEventListener('click', (e) => {
-            if (isTyping && !e.target.closest('.choice-btn') && !e.target.closest('.day1-btn')) {
-                stopTyping();
+        function returnToMainMenu() {
+            overlay.classList.remove('active');
+            hideHint();
+            mainMenu.classList.remove('hidden');
+            // Возвращаемся в меню — снова запускаем фоновое видео и эмбиент
+            menuBgVideo.play().catch(() => {});
+            if (musicPlaying) {
+                bgMusic.play().catch(() => {});
+            }
+            topbar.classList.add('hidden');
+            titleBlock.classList.add('hidden');
+            continueBtn.disabled = !hasSave();
+        }
+
+        function startNewGame() {
+            resetStoryState();
+            localStorage.removeItem(SAVE_KEY);
+            continueBtn.disabled = true;
+            enterGameScreen();
+            showHint();
+        }
+
+        // --- Подсказка по управлению ---
+        function showHint() {
+            hintVisible = true;
+            hintBox.classList.remove('hidden');
+        }
+
+        function hideHint() {
+            hintVisible = false;
+            hintBox.classList.add('hidden');
+        }
+
+        // --- Окно подтверждения новой игры ---
+        startGameBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            playClick();
+            if (hasSave()) {
+                // Прогресс есть — предупреждаем о сбросе
+                confirmOverlay.classList.add('active');
+            } else {
+                // Первый запуск — стартуем без вопросов
+                startNewGame();
             }
         });
 
-        // Инициализация: показываем меню при загрузке
-        // (Оно уже видно по умолчанию в HTML, но убедимся, что игра не запущена)
-        topbar.classList.add('hidden');
-        titleBlock.classList.add('hidden');
-        hintBox.classList.add('hidden');
+        confirmYesBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            playClick();
+            confirmOverlay.classList.remove('active');
+            startNewGame();
+        });
 
+        confirmNoBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            playClick();
+            confirmOverlay.classList.remove('active');
+        });
+
+        confirmOverlay.addEventListener('click', (e) => {
+            if (e.target === confirmOverlay) {
+                // Клик мимо окна = «Нет, вернуться»
+                confirmOverlay.classList.remove('active');
+            }
+        });
+
+        // --- Продолжить игру ---
+        continueBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            playClick();
+            if (loadGame()) {
+                enterGameScreen();
+            } else {
+                // Сохранение повреждено — начинаем заново
+                startNewGame();
+            }
+        });
+
+        // --- Выйти и сохранить ---
+        exitSaveBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            playClick();
+            saveGame();
+            returnToMainMenu();
+        });
+
+        // --- Откат к выбору ---
+        rollbackBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!rollbackCheckpoint) return;
+
+            playClick();
+            rollbackBtn.disabled = true;
+
+            if (isTyping) {
+                clearInterval(typingInterval);
+                isTyping = false;
+                // Останавливаем звук печати
+                typeSound.pause();
+                typeSound.currentTime = 0;
+            }
+
+            pendingResult = null;
+            choiceMade = false;
+
+            const keepCount = rollbackCheckpoint.containerChildCount;
+            while (container.children.length > keepCount) {
+                container.removeChild(container.lastChild);
+            }
+
+            // Кнопка «День 1», если была на экране, ушла вместе с абзацами
+            day1BtnVisible = false;
+
+            currentIndex = rollbackCheckpoint.choiceIndex;
+
+            const choiceObj = paragraphs[currentIndex];
+            showChoice(choiceObj, false);
+
+            currentIndex++;
+
+            // Автосохранение сразу после отката
+            saveGame();
+
+            overlay.classList.remove('active');
+        });
+
+        // --- Печать текста ---
+        function typeParagraph(text) {
+            isTyping = true;
+            const p = document.createElement('div');
+            p.className = 'paragraph';
+            const cursor = document.createElement('span');
+            cursor.className = 'cursor';
+            cursor.textContent = '_';
+            p.appendChild(cursor);
+            container.appendChild(p);
+            let charIndex = 0;
+            const speed = 30;
+            // Звук печати: зацикленный трек играет, пока печатается абзац
+            typeSound.currentTime = 0;
+            typeSound.play().catch(() => {});
+            typingInterval = setInterval(() => {
+                if (charIndex < text.length) {
+                    const char = document.createTextNode(text[charIndex]);
+                    p.insertBefore(char, cursor);
+                    charIndex++;
+                } else {
+                    clearInterval(typingInterval);
+                    cursor.remove();
+                    isTyping = false;
+                    // Печать завершена — глушим звук
+                    typeSound.pause();
+                    typeSound.currentTime = 0;
+                    // Автосохранение: абзац допечатан полностью
+                    saveGame();
+                }
+            }, speed);
+        }
+
+        function skipTyping() {
+            clearInterval(typingInterval);
+            const lastP = container.lastElementChild;
+            if (lastP && lastP.classList.contains('paragraph')) {
+                lastP.textContent = currentTypingText;
+            }
+            isTyping = false;
+            // Печать пропущена — глушим звук
+            typeSound.pause();
+            typeSound.currentTime = 0;
+            // Автосохранение: печать пропущена, абзац показан целиком
+            saveGame();
+        }
+
+        function typeParagraphTracked(text) {
+            currentTypingText = text;
+            typeParagraph(text);
+        }
+
+        function showChoice(choiceObj, enableRollback) {
+            // Сбрасываем флаг выбора — фикс бага с неработающими кнопками второго выбора
+            choiceMade = false;
+
+            rollbackCheckpoint = {
+                choiceIndex: currentIndex,
+                containerChildCount: container.children.length
+            };
+            if (enableRollback) {
+                rollbackBtn.disabled = false;
+            }
+            isChoiceVisible = true;
+            const choiceBlock = document.createElement('div');
+            choiceBlock.className = 'choice-block';
+            choiceObj.options.forEach((option) => {
+                const btn = document.createElement('button');
+                btn.className = 'choice-btn';
+                btn.textContent = option.label;
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (choiceMade) return;
+                    choiceMade = true;
+                    isChoiceVisible = false;
+                    // Запоминаем, какой выбор сделан — головоломка это читает
+                    lastChoiceLabel = option.label;
+                    playClick();
+                    choiceBlock.remove();
+                    pendingResult = option.result.slice();
+                    // Автосохранение: выбор сделан, состояние до начала печати результата
+                    saveGame();
+                    if (pendingResult.length > 0) {
+                        const firstText = pendingResult.shift();
+                        typeParagraphTracked(firstText);
+                    }
+                });
+                choiceBlock.appendChild(btn);
+            });
+            container.appendChild(choiceBlock);
+
+            // Автосохранение: развилка появилась на экране
+            saveGame();
+        }
+
+        // --- Кнопка «День 1» ---
+        function showDay1Button(silent) {
+            if (day1BtnVisible) return;
+            day1BtnVisible = true;
+            const block = document.createElement('div');
+            block.className = 'day1-btn-block';
+            block.id = 'day1-btn-block';
+            const btn = document.createElement('button');
+            btn.className = 'day1-btn';
+            btn.textContent = 'День 1';
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                playClick();
+                enterPuzzleDay(1);
+            });
+            block.appendChild(btn);
+            container.appendChild(block);
+            if (!silent) {
+                // Автосохранение: кнопка появилась на экране
+                saveGame();
+            }
+        }
+
+        // --- Переходы в дни головоломки ---
+        function enterPuzzleDay(dayNumber) {
+            if (inPuzzle) return;
+
+            // Глушим печать, если она идёт
+            if (isTyping) {
+                clearInterval(typingInterval);
+                isTyping = false;
+                typeSound.pause();
+                typeSound.currentTime = 0;
+            }
+
+            // Фиксируем сюжетное состояние основного сейва
+            saveGame();
+
+            // Записываем ярлык последнего выбора — дни головоломки его читают
+            const st = readPuzzleState();
+            st.story = st.story || {};
+            st.story.lastChoice = lastChoiceLabel;
+            st.story.day1_agreed = (lastChoiceLabel === 'Согласиться');
+            writePuzzleState(st);
+
+            inPuzzle = true;
+            puzzleScreen.innerHTML = '';
+            container.classList.add('puzzle-hidden');
+            titleBlock.classList.add('hidden');
+            topbar.classList.add('hidden');
+            hideHint();
+            puzzleScreen.classList.remove('hidden');
+
+            // Дни регистрируются в window.JR_DAYS как объекты с методом render
+            // (день сам рисует свой контент и получает api для навигации)
+            const startDay = window.JR_DAYS && window.JR_DAYS[dayNumber];
+            const dayApi = { exitToStory: exitPuzzleDay, exitToMenu: exitPuzzleToMenu };
+            if (startDay && typeof startDay.render === 'function') {
+                startDay.render(puzzleScreen, dayApi);
+            } else if (typeof startDay === 'function') {
+                // Запасной вариант: день зарегистрирован функцией
+                startDay(puzzleScreen, dayApi);
+            } else {
+                puzzleScreen.innerHTML =
+                    '<div class="puzzle-placeholder"><div class="puzzle-title">ДЕНЬ ' + dayNumber + '</div>' +
+                    '<div class="puzzle-note">Файл day' + dayNumber + '.js не найден. Проверьте, что он лежит в одной папке с index.html.</div></div>';
+            }
+        }
+
+        function exitPuzzleDay() {
+            if (!inPuzzle) return;
+            inPuzzle = false;
+            puzzleScreen.classList.add('hidden');
+            puzzleScreen.innerHTML = '';
+            container.classList.remove('puzzle-hidden');
+            topbar.classList.remove('hidden');
+            titleBlock.classList.remove('hidden');
+        }
+
+        function exitPuzzleToMenu() {
+            if (!inPuzzle) return;
+            inPuzzle = false;
+            puzzleScreen.classList.add('hidden');
+            puzzleScreen.innerHTML = '';
+            returnToMainMenu();
+        }
+
+        // Дни головоломки пользуются этими функциями
+        window.JR_exitPuzzleDay = exitPuzzleDay;
+        window.JR_exitPuzzleToMenu = exitPuzzleToMenu;
+
+        // --- Продвижение сюжета (общая логика для клика и пробела) ---
+        function isGameActive() {
+            // Внутри дня головоломки клики/пробел сюжет не двигают
+            if (inPuzzle) return false;
+            // Клавиши активны только на экране сюжета: главное меню скрыто и не открыто ни одно окно
+            if (!mainMenu.classList.contains('hidden')) return false;
+            if (document.querySelector('.overlay.active')) return false;
+            return true;
+        }
+
+        function advanceStory() {
+            if (hintVisible) {
+                hideHint();
+                // Не «съедаем» действие: подсказка закрывается, и текст сразу начинает печататься
+            }
+            if (isChoiceVisible) return;
+            if (isTyping) {
+                skipTyping();
+                return;
+            }
+            if (pendingResult && pendingResult.length > 0) {
+                const nextText = pendingResult.shift();
+                typeParagraphTracked(nextText);
+                return;
+            }
+            if (currentIndex < paragraphs.length) {
+                const item = paragraphs[currentIndex];
+                if (typeof item === 'string') {
+                    typeParagraphTracked(item);
+                    currentIndex++;
+                } else if (item.type === "choice") {
+                    showChoice(item, true);
+                    currentIndex++;
+                } else if (item.type === "day1button") {
+                    currentIndex++;
+                    // Кнопка появляется только после выбора «Согласиться» —
+                    // в ветке отказа заглушка пока без перехода
+                    if (lastChoiceLabel === "Согласиться") {
+                        showDay1Button();
+                    }
+                }
+            }
+        }
+
+        document.body.addEventListener('click', () => {
+            if (!isGameActive()) return;
+            advanceStory();
+        });
+
+        // --- Управление с клавиатуры ---
+        document.addEventListener('keydown', (e) => {
+            const isInputFocused = document.activeElement &&
+                (document.activeElement.tagName === 'INPUT' ||
+                 document.activeElement.tagName === 'TEXTAREA');
+
+            if (e.code === 'KeyM') {
+                // Клавиша M переключает окно «Меню» (работает и в русской раскладке — «ь»)
+                if (isInputFocused) return;
+                if (inPuzzle) return;
+                if (!overlay.classList.contains('active')) {
+                    if (!isGameActive()) return;
+                    if (hintVisible) {
+                        hideHint();
+                    }
+                    overlay.classList.add('active');
+                } else {
+                    overlay.classList.remove('active');
+                }
+                return;
+            }
+
+            if (e.key === ' ' || e.code === 'Space') {
+                if (isInputFocused) return;
+                if (!isGameActive()) return;
+                e.preventDefault();
+                advanceStory();
+            }
+        });
+
+        // --- Инициализация ---
+        continueBtn.disabled = !hasSave();
     </script>
-
     <!-- Дни головоломки: подключаются после основного скрипта -->
     <script src="day1.js"></script>
 </body>
