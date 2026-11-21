@@ -160,7 +160,7 @@
       '.jr-d1-line .k{opacity:.55;flex-shrink:0;}',
       '.jr-d1-line .val{text-align:right;}',
       '.jr-d1-pre{white-space:pre-wrap;text-align:right;}',
-      '.jr-d1-photo{width:200px;height:260px;border:1px solid var(--text-color,#e8e8e8);display:flex;align-items:center;justify-content:center;cursor:pointer;margin:0 auto;}',
+      '.jr-d1-photo{width:200px;height:260px;border:1px solid var(--text-color,#e8e8e8);display:flex;align-items:center;justify-content:center;cursor:pointer;margin:0 auto;background:url(\'photo.jpeg\') center/cover no-repeat;}',
       '.jr-d1-photo .mark{opacity:.5;font-size:12px;letter-spacing:2px;text-align:center;}',
       '.jr-d1-photo.examined{cursor:default;border-style:dashed;}',
       '.jr-d1-note{opacity:.75;font-size:14px;line-height:1.6;margin:10px 0;}',
