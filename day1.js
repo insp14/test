@@ -534,7 +534,7 @@
         '</div>' +
         '<div class="jr-d1-tabpane" data-pane="photo" style="display:none">' +
         '<div class="jr-d1-doc"><h3>ФОТОГРАФИЯ</h3>' +
-        '<div class="jr-d1-center"><div class="jr-d1-photo" id="jr-d1-photoBox"><span class="mark">[ФОТО — в профиль]</span></div></div>' +
+        '<div class="jr-d1-center"><div class="jr-d1-photo" id="jr-d1-photoBox"></div></div>' +
         '<div class="jr-d1-note">Личность на фотографии… Вроде бы Вы, а вроде бы и нет. Человек, изображенный на ней, действительно похож на Вас, но лишь общими чертами. Из отличительных особенностей — длинная прическа, борода и серьга в ухе, которых нет у Вас, но была у человека на фото. Внимание также упало на шрамы, которые Вы обнаружили у себя на лице после пробуждения, но не видите на фотографии.</div>' +
         '</div>' +
         '</div>' +
