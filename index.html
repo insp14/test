@@ -1134,6 +1134,7 @@
         function startNewGame() {
             resetStoryState();
             localStorage.removeItem(SAVE_KEY);
+            localStorage.removeItem(PUZZLE_STATE_KEY);
             continueBtn.disabled = true;
             enterGameScreen();
             showHint();
